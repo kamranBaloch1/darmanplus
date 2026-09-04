@@ -74,7 +74,12 @@ function Profile({ data, token, verify, requestUnverify, verifying }: { data: De
     <header className="detail-hero">
       <div className="detail-avatar">{doctor.profile_image ? <img src={doctor.profile_image} alt="" /> : <UserRound />}</div>
       <div className="doctor-identity"><p>DOCTOR PROFILE · ADMIN REVIEW</p><h1>{String(doctor.name || "Unnamed doctor")}{doctor.is_doctor_verified && <BadgeCheck />}</h1><span>{String(doctor.title || "Doctor")} <b>•</b> {String(doctor.specialization || "Specialization not provided")}</span><div className="detail-pills"><i className={doctor.is_doctor_verified ? "ok" : "wait"}>{doctor.is_doctor_verified ? <><Check /> Verified clinician</> : "Verification pending"}</i><i className={doctor.is_available ? "online" : "offline"}>{doctor.is_available ? "Available for bookings" : "Currently offline"}</i><i className="fee-pill">Consultation fee · {doctor.consultation_fee ? money(doctor.consultation_fee) : "Not set"}</i>{!doctor.is_profile_completed&&<i className="profile-incomplete-detail">Profile incomplete</i>}</div></div>
-      <div className="header-profile-data"><span><small>DOCTOR ID</small><b>{doctor.uid.slice(0, 8).toUpperCase()}</b></span><span><small>MEMBER SINCE</small><b>{doctor.created_at ? new Intl.DateTimeFormat("en-PK", { month: "short", year: "numeric" }).format(new Date(String(doctor.created_at))) : "—"}</b></span>{doctor.intro_video_url && <a href={String(doctor.intro_video_url)} target="_blank" rel="noreferrer"><PlayCircle />Watch intro video</a>}</div>
+      <div className="header-profile-data"><span><small>DOCTOR ID</small><b>{doctor.uid.slice(0, 8).toUpperCase()}</b></span><span><small>MEMBER SINCE</small><b>{doctor.created_at ? new Intl.DateTimeFormat("en-PK", { month: "short", year: "numeric" }).format(new Date(String(doctor.created_at))) : "—"}</b></span>{typeof doctor.intro_video_url === "string" && doctor.intro_video_url && (
+  <a href={doctor.intro_video_url} target="_blank" rel="noreferrer">
+    <PlayCircle />
+    Watch intro video
+  </a>
+)}</div>
       <div className="detail-actions"><span>Last updated<br /><b>{date(doctor.updated_at)}</b></span>{doctor.is_doctor_verified ? <button className="unverify-detail" disabled={verifying} onClick={requestUnverify}>{verifying ? "Updating…" : "Unverify doctor"}</button> : <button className="blue verify-detail" disabled={verifying} onClick={() => void verify()}><BadgeCheck />{verifying ? "Verifying…" : "Verify doctor"}</button>}</div>
     </header>
     <section className="detail-stats">
