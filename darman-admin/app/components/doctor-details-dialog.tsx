@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, BadgeCheck, CalendarDays, Check, CircleCheck, CircleDollarSign, Clock3, Download, ExternalLink, FileText, Mail, Phone, PlayCircle, ShieldCheck, Star, Stethoscope, TrendingUp, UserRound, WalletCards } from "lucide-react";
 
 type Detail = {
@@ -19,6 +20,8 @@ const date = (value: unknown) => value ? new Intl.DateTimeFormat("en-PK", { date
 const label = (value: string) => value.replace(/([A-Z])/g, " $1").replace(/_/g, " ").replace(/^./, (letter) => letter.toUpperCase());
 
 export default function DoctorDetailsDialog({ doctorId, token, onClose, onVerified, onUnverified }: { doctorId: string; token: string; onClose: () => void; onVerified: (id: string) => Promise<void>; onUnverified: (id: string) => Promise<void> }) {
+  const router = useRouter();
+  useEffect(() => { if (!window.location.pathname.startsWith("/doctors/")) router.push(`/doctors/${doctorId}`); }, [doctorId, router]);
   const [data, setData] = useState<Detail | null>(null);
   const [error, setError] = useState("");
   const [verifying, setVerifying] = useState(false);
@@ -37,24 +40,24 @@ export default function DoctorDetailsDialog({ doctorId, token, onClose, onVerifi
   useEffect(() => { void load(); }, [doctorId]);
   const verify = async () => {
     setVerifying(true);
-    try { await onVerified(doctorId); await load(); } finally { setVerifying(false); }
+    try { await onVerified(doctorId); await load(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Doctor could not be verified."); } finally { setVerifying(false); }
   };
   const unverify = async () => {
     setVerifying(true);
-    try { await onUnverified(doctorId); await load(); } finally { setVerifying(false); }
+    try { await onUnverified(doctorId); await load(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Doctor could not be unverified."); } finally { setVerifying(false); }
   };
   return <main className="doctor-page">
     <article className="doctor-page-inner">
       <button className="detail-back" onClick={onClose}><ArrowLeft />Back to doctors</button>
       {!data && !error && <div className="detail-loading"><span /><p>Loading complete doctor overview…</p></div>}
       {error && <div className="detail-error"><ShieldCheck /><h2>Profile could not be loaded</h2><p>{error}</p><button className="blue" onClick={() => void load()}>Try again</button></div>}
-      {data && <Profile data={data} token={token} verify={verify} requestUnverify={() => setConfirmUnverify(true)} verifying={verifying} />}
+      {data && <Profile data={data} token={token} verify={verify} requestUnverify={() => setConfirmUnverify(true)} verifying={verifying} reload={load} />}
       {confirmUnverify && <div className="confirm-overlay"><section className="confirm-dialog"><h2>Unverify this doctor?</h2><p>This removes verified status and immediately sets the doctor offline. They will no longer be available for patient bookings.</p><div><button onClick={() => setConfirmUnverify(false)}>Keep verified</button><button className="danger-action" disabled={verifying} onClick={() => { setConfirmUnverify(false); void unverify(); }}>{verifying ? "Updating…" : "Unverify doctor"}</button></div></section></div>}
     </article>
   </main>;
 }
 
-function Profile({ data, token, verify, requestUnverify, verifying }: { data: Detail; token: string; verify: () => Promise<void>; requestUnverify: () => void; verifying: boolean }) {
+function Profile({ data, token, verify, requestUnverify, verifying, reload }: { data: Detail; token: string; verify: () => Promise<void>; requestUnverify: () => void; verifying: boolean; reload: () => Promise<void> }) {
   const doctor = data.doctor;
   const completed = data.bookings.filter((booking) => booking.status === "completed");
   const cancelled = data.bookings.filter((booking) => booking.status === "cancelled");
@@ -105,12 +108,31 @@ function Profile({ data, token, verify, requestUnverify, verifying }: { data: De
       <section className="detail-section"><h2><UserRound /> Account and identity</h2><Info label="Doctor ID" value={doctor.uid} /><Info label="Email" value={doctor.email} icon={<Mail />} /><Info label="Phone" value={doctor.phone} icon={<Phone />} /><Info label="Email verified" value={doctor.is_email_verified ? "Yes" : "No"} /><Info label="Phone verified" value={doctor.is_phone_verified ? "Yes" : "No"} /><Info label="Gender" value={doctor.gender} /><Info label="Date of birth" value={doctor.date_of_birth} /><Info label="Joined Darman" value={date(doctor.created_at)} /></section>
       <section className="detail-section"><h2><Stethoscope /> Professional information</h2><Info label="Specialization" value={doctor.specialization} /><Info label="Title" value={doctor.title} /><Info label="Qualifications" value={doctor.qualification} /><Info label="Experience" value={doctor.experience_years ? `${doctor.experience_years} years` : null} /><Info label="License number" value={doctor.medical_license_number} /><Info label="Consultation fee" value={doctor.consultation_fee ? money(doctor.consultation_fee) : null} /><Info label="Profile complete" value={doctor.is_profile_completed ? "Yes" : "No"} /><div className="bio"><small>BIO</small><p>{String(doctor.bio || "No bio has been provided.")}</p></div></section>
       <section className="detail-section wallet-section"><h2><WalletCards /> Wallet and settlement</h2><div className="wallet-balance"><small>CURRENT WALLET BALANCE</small><strong>{money(doctor.wallet_balance)}</strong><span>Available for withdrawal or future settlement</span></div><div className="wallet-breakdown"><div><span>Completed consultation value</span><b>{money(grossRevenue)}</b><small>Total paid by patients</small></div><div className="commission"><span>Darman commission</span><b>{money(totalCommission)}</b><small>Platform revenue from this doctor</small></div><div className="earning"><span>Doctor settlement</span><b>{money(totalEarned)}</b><small>Recorded earnings after commission</small></div></div><div className="wallet-status"><span><i />Reserved / pending amount <b>{money(doctor.wallet_reserved_balance)}</b></span><span><i />Recovery due <b>{money(doctor.wallet_recovery_due)}</b></span></div><div className="transaction-list"><h3>Recent wallet activity</h3>{data.transactions.length ? data.transactions.slice(0, 5).map((transaction) => <div key={transaction.id}><span><b>{label(transaction.transaction_type)}</b><small>{transaction.description || date(transaction.created_at)}</small></span><strong>{money(transaction.amount)}</strong></div>) : <Empty text="No wallet transactions yet." />}</div></section>
-      <section className="detail-section"><h2><FileText /> Verification documents</h2>{data.doctor.documents.length ? <div className="documents">{data.doctor.documents.map((document, index) => <a href={document.url} target="_blank" rel="noreferrer" key={document.path}><FileText /><span>Document {index + 1}<small>{document.path.split("/").pop()}</small></span><ExternalLink /></a>)}</div> : <Empty text="No verification documents uploaded." />}</section>
+      <section className="detail-section"><h2><FileText /> Verification documents</h2>{data.doctor.documents.length ? <DocumentList doctorId={doctor.uid} documents={data.doctor.documents} token={token} onReplaced={reload} /> : <Empty text="No verification documents uploaded." />}</section>
     </div>
     <section className="detail-section full-section"><h2><CalendarDays /> Consultation history <small>{data.bookings.length} records</small><button className="export-history" onClick={exportHistory}><Download />Export CSV</button></h2>{data.bookings.length ? <div className="history-table"><div className="history-head"><span>Patient</span><span>Status</span><span>Fee / earnings</span><span>Date</span><span>Follow-up</span></div>{data.bookings.map((booking) => <a className="history-row consultation-link" href={`/consultations/${booking.id}`} key={booking.id}><span className="patient-cell">{booking.patient?.profile_image ? <img src={booking.patient.profile_image} alt="" /> : <UserRound />}{booking.patient?.name || "Patient record unavailable"}</span><i className={`status ${booking.status}`}>{label(booking.status)}</i><span>{money(booking.consultation_fee)}<small>Earned {money(booking.doctor_earning)}</small></span><span>{date(booking.completed_at ?? booking.created_at)}</span><span>{booking.follow_up_date ? `${booking.follow_up_date}${booking.follow_up_ended_at ? " · ended" : ""}` : "—"}</span></a>)}</div> : <Empty text="This doctor has no consultation history yet." />}</section>
     <section className="detail-section full-section"><h2><Star /> Patient reviews <small>{data.ratings.length} submitted</small></h2>{data.ratings.length ? <div className="reviews">{data.ratings.map((rating) => <article key={rating.id}><div><a className="review-patient-link" href={rating.patient ? `/patients/${rating.patient_id}` : undefined}>{rating.patient?.name || "Patient"}</a><span>{Array.from({ length: 5 }, (_, index) => <Star key={index} className={index < rating.rating ? "filled" : ""} />)}</span></div><p>{rating.review || "No written review."}</p><small>{date(rating.created_at)}</small></article>)}</div> : <Empty text="No patient ratings have been submitted yet." />}</section>
     <DoctorOperations doctorId={doctor.uid} token={token} />
   </>;
+}
+
+function DocumentList({ doctorId, documents, token, onReplaced }: { doctorId: string; documents: { path: string; url: string }[]; token: string; onReplaced: () => Promise<void> }) {
+  const [busy, setBusy] = useState("");
+  const [message, setMessage] = useState("");
+  const replace = async (path: string, file?: File) => {
+    if (!file) return;
+    setBusy(path); setMessage("");
+    try {
+      const form = new FormData(); form.append("previousPath", path); form.append("file", file);
+      const response = await fetch(`/api/admin/doctors/${doctorId}/documents`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form });
+      const result = await response.json();
+      if (!response.ok) throw Error(result.error ?? "Document could not be replaced.");
+      setMessage("Document replaced. Doctor verification now requires a fresh review.");
+      await onReplaced();
+    } catch (cause) { setMessage(cause instanceof Error ? cause.message : "Document could not be replaced."); }
+    finally { setBusy(""); }
+  };
+  return <div className="documents document-manager">{documents.map((document, index) => <div className="document-item" key={document.path}><a href={document.url} target="_blank" rel="noreferrer"><FileText /><span>Document {index + 1}<small>{document.path.split("/").pop()}</small></span><ExternalLink /></a><label className="replace-document"><input type="file" accept="application/pdf,image/jpeg,image/png" disabled={busy === document.path} onChange={event => { void replace(document.path, event.target.files?.[0]); event.currentTarget.value = ""; }} />{busy === document.path ? "Replacing…" : "Replace document"}</label></div>)}{message && <p className="document-message">{message}</p>}</div>;
 }
 
 function Metric({ icon, label, value, helper }: { icon: React.ReactNode; label: string; value: string; helper?: string }) { return <article><i>{icon}</i><span><small>{label}</small><strong>{value}</strong>{helper && <em>{helper}</em>}</span></article>; }
