@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1059104765277",
+    "project_id": "darman-157e9",
+    "storage_bucket": "darman-157e9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1059104765277:android:b608c6f6d28db31e94a4b4",
+        "android_client_info": {
+          "package_name": "com.user.darman"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0alZwYDGxODmGSibJaTZuYInofRGkoTw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

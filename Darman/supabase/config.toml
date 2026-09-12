@@ -1,0 +1,23 @@
+[functions.send-whatsapp-otp]
+verify_jwt = false
+
+[functions.verify-whatsapp-otp]
+verify_jwt = false
+
+[functions.public-doctors]
+verify_jwt = false
+
+[functions.send-follow-up-day-reminders]
+verify_jwt = false
+
+[functions.create-jazzcash-top-up]
+verify_jwt = false
+
+[functions.jazzcash-checkout]
+verify_jwt = false
+
+[functions.jazzcash-payment-callback]
+verify_jwt = false
+
+[functions.reconcile-jazzcash-wallet-top-ups]
+verify_jwt = false
