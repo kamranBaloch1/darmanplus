@@ -5,6 +5,7 @@ import 'package:darmaan/presentation/home/account/account_screen.dart';
 import 'package:darmaan/presentation/home/patient/repository/patient_repository.dart';
 import 'package:darmaan/presentation/home/patient/screens/patient_appointment_history_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:darmaan/core/utils/phone_number_formatter.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -111,10 +112,10 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7F9),
+      backgroundColor:Colors.white,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: const Color(0xFFF6F7F9),
+        backgroundColor:  Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -207,7 +208,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                   backgroundColor: const Color(0xFFF1F3F5),
                   foregroundColor: AppColors.textPrimary,
                 ),
-                icon: const Icon(Icons.edit_rounded, size: 18),
+                icon: const AppIcon(Icons.edit_rounded, size: 18),
               ),
             ),
           ),
@@ -312,7 +313,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                       width: 240,
                       height: 240,
                       child: Center(
-                        child: Icon(
+                        child: AppIcon(
                           Icons.broken_image_outlined,
                           size: 44,
                           color: Colors.white70,
@@ -331,7 +332,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                   backgroundColor: Colors.black.withValues(alpha: 0.55),
                   foregroundColor: Colors.white,
                 ),
-                icon: const Icon(Icons.close_rounded),
+                icon: const AppIcon(Icons.close_rounded),
               ),
             ),
           ],
@@ -400,7 +401,7 @@ class _HeaderDetailChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: AppColors.textSecondary),
+          AppIcon(icon, size: 13, color: AppColors.textSecondary),
           const SizedBox(width: 6),
           Flexible(
             child: Text(
@@ -416,7 +417,7 @@ class _HeaderDetailChip extends StatelessWidget {
           ),
           if (verified) ...[
             const SizedBox(width: 5),
-            const Icon(
+            const AppIcon(
               Icons.verified_rounded,
               size: 13,
               color: Color(0xFF18A957),
@@ -466,7 +467,7 @@ class _ActionTile extends StatelessWidget {
                         : const Color(0xFFF1F4F7),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
+                  child: AppIcon(
                     icon,
                     size: 17,
                     color: destructive
@@ -504,7 +505,7 @@ class _ActionTile extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 trailing ??
-                    Icon(
+                    AppIcon(
                       Icons.chevron_right_rounded,
                       size: 20,
                       color: AppColors.textSecondary.withValues(alpha: 0.55),
@@ -689,7 +690,7 @@ class _EditPatientSheetState extends State<_EditPatientSheet> {
         fontSize: 13,
         color: AppColors.textSecondary,
       ),
-      prefixIcon: Icon(icon, size: 19, color: AppColors.textSecondary),
+      prefixIcon: AppIcon(icon, size: 19, color: AppColors.textSecondary),
       filled: true,
       fillColor: const Color(0xFFF6F7F9),
       contentPadding: const EdgeInsets.symmetric(vertical: 16),
@@ -776,7 +777,7 @@ class _EditPatientSheetState extends State<_EditPatientSheet> {
                               ? const CircularProgressIndicator(strokeWidth: 2)
                               : (_croppedPhoto == null &&
                                       widget.patient.profileImage?.trim().isNotEmpty != true)
-                                  ? Icon(Icons.person_rounded,
+                                  ? AppIcon(Icons.person_rounded,
                                       size: 34, color: AppColors.textSecondary)
                                   : null,
                         ),
@@ -792,7 +793,7 @@ class _EditPatientSheetState extends State<_EditPatientSheet> {
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 2),
                           ),
-                          child: const Icon(Icons.photo_camera_rounded,
+                          child: const AppIcon(Icons.photo_camera_rounded,
                             size: 15, color: Colors.white),
                         ),
                       ),
@@ -896,7 +897,7 @@ class _EditPatientSheetState extends State<_EditPatientSheet> {
                   ),
                   child: Row(
                     children: [
-                      Icon(
+                      AppIcon(
                         Icons.cake_outlined,
                         size: 19,
                         color: AppColors.textSecondary,
@@ -914,7 +915,7 @@ class _EditPatientSheetState extends State<_EditPatientSheet> {
                         ),
                       ),
                       const Spacer(),
-                      Icon(
+                      AppIcon(
                         Icons.chevron_right_rounded,
                         size: 20,
                         color: AppColors.textSecondary.withValues(alpha: 0.6),
@@ -985,7 +986,7 @@ class _ProfileError extends StatelessWidget {
               color: Color(0xFFF1F4F7),
               shape: BoxShape.circle,
             ),
-            child: Icon(
+            child: AppIcon(
               Icons.person_off_outlined,
               size: 32,
               color: AppColors.textSecondary,

@@ -47,6 +47,7 @@ dependencies:
   iconsax_flutter: ^1.0.1
   iconsax_plus: ^1.0.0
   lucide_icons_flutter: ^3.1.19
+  flutter_svg: ^2.3.0
  
 
 dev_dependencies:
@@ -78,4 +79,6 @@ flutter:
   assets:
     - assets/images/logo/
     - assets/images/branding/
+    - assets/icons/solar/linear/
+    - assets/icons/solar/bold_duotone/
    

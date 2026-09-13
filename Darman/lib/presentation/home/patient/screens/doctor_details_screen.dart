@@ -14,6 +14,7 @@ import 'package:darmaan/widgets/video_dilog.dart';
 import 'package:darmaan/widgets/unread_message_badge.dart';
 import 'package:darmaan/widgets/app_shimmer.dart';
 import 'package:flutter/material.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -295,7 +296,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen>
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      leading: const Icon(
+                      leading: const AppIcon(
                         Icons.event_repeat_rounded,
                         color: AppColors.brand,
                       ),
@@ -312,7 +313,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen>
                             : 'View only until this date',
                         style: GoogleFonts.outfit(fontSize: 11.5),
                       ),
-                      trailing: const Icon(Icons.chevron_right_rounded),
+                      trailing: const AppIcon(Icons.chevron_right_rounded),
                     ),
                   ),
                 ),
@@ -430,7 +431,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen>
                         color: AppColors.brand,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: const AppIcon(
                         Icons.check_rounded,
                         size: 29,
                         color: Colors.white,
@@ -551,7 +552,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen>
                       color: Color(0xFFF2F2F3),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: const AppIcon(
                       Icons.account_balance_wallet_rounded,
                       size: 28,
                       color: Color(0xFF6B6D76), // medium grey, not black
@@ -568,7 +569,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen>
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2.5),
                       ),
-                      child: const Icon(
+                      child: const AppIcon(
                         Icons.add_rounded,
                         size: 14,
                         color: Colors.white,
@@ -737,7 +738,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen>
                         height: 380,
                         color: const Color(0xFF202124),
                         alignment: Alignment.center,
-                        child: const Icon(
+                        child: const AppIcon(
                           Icons.person_rounded,
                           size: 72,
                           color: Colors.white54,
@@ -760,7 +761,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen>
                     },
                     child: const Padding(
                       padding: EdgeInsets.all(9),
-                      child: Icon(
+                      child: AppIcon(
                         Icons.close_rounded,
                         size: 20,
                         color: Colors.white,
@@ -853,7 +854,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen>
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: const Icon(Icons.arrow_back_rounded, size: 23),
+            icon: const AppIcon(Icons.arrow_back_rounded, size: 23),
             color: AppColors.textPrimary,
           ),
         ),
@@ -945,7 +946,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen>
                       color: AppColors.brand.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
+                    child: AppIcon(
                       Icons.schedule_rounded,
                       size: 19,
                       color: AppColors.brand,
@@ -1028,7 +1029,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
+                    AppIcon(
                       Icons.timer_outlined,
                       size: 16,
                       color: AppColors.brand,
@@ -1285,14 +1286,14 @@ class _DoctorHero extends StatelessWidget {
                                 imageUrl: doctor.profileImage!,
                                 fit: BoxFit.cover,
                                 errorWidget: (_, _, _) {
-                                  return Icon(
+                                  return AppIcon(
                                     Icons.person_rounded,
                                     size: 46,
                                     color: AppColors.textSecondary,
                                   );
                                 },
                               )
-                            : Icon(
+                            : AppIcon(
                                 Icons.person_rounded,
                                 size: 46,
                                 color: AppColors.textSecondary,
@@ -1330,7 +1331,7 @@ class _DoctorHero extends StatelessWidget {
                     if (doctor.isDoctorVerified) ...[
                       const SizedBox(width: 6),
 
-                      Icon(
+                      AppIcon(
                         Icons.verified_rounded,
                         size: 19,
                         color: AppColors.brand,
@@ -1372,7 +1373,7 @@ class _DoctorHero extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        AppIcon(
                           Icons.person_outline_rounded,
                           size: 14,
                           color: AppColors.textSecondary,
@@ -1506,7 +1507,7 @@ class _DoctorHero extends StatelessWidget {
                       ],
                     ),
                     alignment: Alignment.center,
-                    child: Icon(
+                    child: AppIcon(
                       Icons.play_arrow_rounded,
                       size: 25,
                       color: Colors.white,
@@ -1546,7 +1547,7 @@ class _HeroStat extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 16, color: iconColor ?? AppColors.brand),
+              AppIcon(icon, size: 16, color: iconColor ?? AppColors.brand),
 
               const SizedBox(width: 4),
             ],
@@ -1619,7 +1620,7 @@ class _DarmaanVerification extends StatelessWidget {
               color: AppColors.brand.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(13),
             ),
-            child: Icon(
+            child: AppIcon(
               Icons.verified_user_outlined,
               size: 20,
               color: AppColors.brand,
@@ -1658,7 +1659,7 @@ class _DarmaanVerification extends StatelessWidget {
           ),
 
           if (isVerified)
-            Icon(Icons.verified_rounded, size: 18, color: AppColors.brand),
+            AppIcon(Icons.verified_rounded, size: 18, color: AppColors.brand),
         ],
       ),
     );
@@ -1794,7 +1795,7 @@ class _PatientReviewsSectionState extends State<_PatientReviewsSection> {
 
                                 const SizedBox(width: 5),
 
-                                const Icon(
+                                const AppIcon(
                                   Icons.star_rounded,
                                   size: 20,
                                   color: Color(0xFFFFB400),
@@ -1907,7 +1908,7 @@ class _PatientReviewsSectionState extends State<_PatientReviewsSection> {
 
                         const Spacer(),
 
-                        Icon(
+                        AppIcon(
                           Icons.arrow_forward_rounded,
                           size: 17,
                           color: Colors.black,
@@ -1954,7 +1955,7 @@ class _RatingBar extends StatelessWidget {
 
         const SizedBox(width: 4),
 
-        const Icon(Icons.star_rounded, size: 11, color: Color(0xFFFFB400)),
+        const AppIcon(Icons.star_rounded, size: 11, color: Color(0xFFFFB400)),
 
         const SizedBox(width: 7),
 
@@ -2097,7 +2098,7 @@ class _ReviewItem extends StatelessWidget {
                 // -------------------------------------------------------------
                 Row(
                   children: [
-                    Icon(
+                    AppIcon(
                       Icons.check_circle_rounded,
                       size: 13,
                       color: AppColors.brand,
@@ -2126,7 +2127,7 @@ class _ReviewItem extends StatelessWidget {
                   children: List.generate(5, (index) {
                     return Padding(
                       padding: EdgeInsets.only(right: index == 4 ? 0 : 2),
-                      child: Icon(
+                      child: AppIcon(
                         Icons.star_rounded,
                         size: 14,
                         color: index < review.rating
@@ -2275,7 +2276,7 @@ class _FollowUpActionBar extends StatelessWidget {
                   color: const Color(0xFFEAF3FF),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: const AppIcon(
                   Icons.event_repeat_rounded,
                   size: 19,
                   color: Color(0xFF175CD3),
@@ -2322,7 +2323,7 @@ class _FollowUpActionBar extends StatelessWidget {
                     icon: UnreadMessageBadge(
                       bookingId: bookingId,
                       isDoctor: false,
-                      child: const Icon(
+                      child: const AppIcon(
                         Icons.chat_bubble_outline_rounded,
                         size: 16,
                       ),
@@ -2402,7 +2403,7 @@ class _ActiveBookingBar extends StatelessWidget {
               color: AppColors.brand.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, size: 19, color: AppColors.brand),
+            child: AppIcon(icon, size: 19, color: AppColors.brand),
           ),
 
           const SizedBox(width: 12),
@@ -2442,7 +2443,7 @@ class _ActiveBookingBar extends StatelessWidget {
               icon: UnreadMessageBadge(
                 bookingId: bookingId,
                 isDoctor: false,
-                child: const Icon(
+                child: const AppIcon(
                   Icons.chat_bubble_outline_rounded,
                   size: 17,
                 ),
@@ -2509,7 +2510,7 @@ class _CancelSheet extends StatelessWidget {
               color: Color(0xFFFDF2F2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: const AppIcon(
               Icons.event_busy_outlined,
               size: 21,
               color: Color(0xFFB42318),

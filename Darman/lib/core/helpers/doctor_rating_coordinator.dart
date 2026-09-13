@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:darmaan/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -113,7 +114,7 @@ class _DoctorRatingCoordinatorState extends State<DoctorRatingCoordinator> {
                   shape: BoxShape.circle,
                   border: Border.all(color: const Color(0xFFFFE8A3)),
                 ),
-                child: const Icon(
+                child: const AppIcon(
                   Icons.star_rounded,
                   size: 34,
                   color: Color(0xFFFFB400),
@@ -144,7 +145,7 @@ class _DoctorRatingCoordinatorState extends State<DoctorRatingCoordinator> {
                   5,
                   (index) => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: Icon(
+                    child: AppIcon(
                       index < stars
                           ? Icons.star_rounded
                           : Icons.star_border_rounded,

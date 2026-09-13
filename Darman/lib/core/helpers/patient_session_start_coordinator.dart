@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:darmaan/core/theme/app_colors.dart';
 import 'package:darmaan/presentation/home/chat/chat_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -82,7 +83,7 @@ class _PatientSessionStartCoordinatorState
                     color: AppColors.brand.withValues(alpha: .1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: const AppIcon(
                     Icons.video_call_rounded,
                     size: 32,
                     color: AppColors.brand,
@@ -113,7 +114,7 @@ class _PatientSessionStartCoordinatorState
                   height: 48,
                   child: FilledButton.icon(
                     onPressed: () => Navigator.pop(dialogContext, true),
-                    icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                    icon: const AppIcon(Icons.play_arrow_rounded, size: 20),
                     label: const Text('Start consultation'),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.brand,

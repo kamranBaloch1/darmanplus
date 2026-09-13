@@ -4,6 +4,7 @@ import 'package:darmaan/core/models/user_model.dart';
 import 'package:darmaan/core/theme/app_colors.dart';
 import 'package:darmaan/presentation/home/patient/repository/patient_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:darmaan/widgets/app_shimmer.dart';
 import 'package:intl/intl.dart';
@@ -180,7 +181,7 @@ class _SummaryCard extends StatelessWidget {
                   color: AppColors.textPrimary),
               ),
               Row(children: [
-                const Icon(Icons.star_rounded, size: 16, color: Color(0xFFFFB300)),
+                const AppIcon(Icons.star_rounded, size: 16, color: Color(0xFFFFB300)),
                 const SizedBox(width: 4),
                 Text('${summary.reviewCount} reviews', style: GoogleFonts.outfit(
                   fontSize: 11.5, color: AppColors.textSecondary)),
@@ -197,7 +198,7 @@ class _SummaryCard extends StatelessWidget {
                     child: Row(
                       children: [
                         SizedBox(width: 18, child: Text('$stars')),
-                        const Icon(
+                        const AppIcon(
                           Icons.star_rounded,
                           size: 14,
                           color: Colors.amber,
@@ -274,7 +275,7 @@ class _ReviewCard extends StatelessWidget {
           Row(
             children: List.generate(
               5,
-              (index) => Icon(
+              (index) => AppIcon(
                 index < review.rating
                     ? Icons.star_rounded
                     : Icons.star_border_rounded,
@@ -304,7 +305,7 @@ class _NoReviews extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 48),
     child: Column(children: [
-      Icon(Icons.rate_review_outlined, size: 48, color: Colors.grey.shade300),
+      AppIcon(Icons.rate_review_outlined, size: 48, color: Colors.grey.shade300),
       const SizedBox(height: 14),
       Text('No reviews yet', style: GoogleFonts.outfit(
         fontSize: 15, fontWeight: FontWeight.w500,

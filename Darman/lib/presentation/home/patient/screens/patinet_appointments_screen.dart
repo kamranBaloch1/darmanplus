@@ -5,6 +5,7 @@ import 'package:darmaan/presentation/home/chat/chat_room.dart';
 import 'package:darmaan/presentation/home/patient/repository/patient_repository.dart';
 import 'package:darmaan/presentation/home/patient/screens/doctor_details_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:darmaan/widgets/unread_message_badge.dart';
 import 'package:darmaan/widgets/app_shimmer.dart';
@@ -526,7 +527,7 @@ class _AppointmentCard
             : null,
         child: _hasImage
             ? null
-            : Icon(
+            : AppIcon(
                 Icons.person_rounded,
                 size: 23,
                 color: AppColors.textSecondary,
@@ -561,7 +562,7 @@ class _AppointmentCard
                   if (doctor?.isDoctorVerified == true) ...[
                     const SizedBox(width: 5),
 
-                    Icon(
+                    AppIcon(
                       Icons.verified_rounded,
                       size: 16,
                       color: AppColors.brand,
@@ -733,7 +734,7 @@ class _AppointmentCard
                 icon: UnreadMessageBadge(
                   bookingId: booking.id,
                   isDoctor: false,
-                  child: const Icon(
+                  child: const AppIcon(
                     Icons.chat_bubble_outline_rounded,
                     size: 16,
                   ),
@@ -779,7 +780,7 @@ class _AppointmentCard
               UnreadMessageBadge(
                 bookingId: booking.id,
                 isDoctor: false,
-                child: const Icon(
+                child: const AppIcon(
                   Icons.chat_bubble_outline_rounded,
                   size: 17,
                 ),
@@ -951,7 +952,7 @@ class _Status extends StatelessWidget {
         mainAxisSize:
             MainAxisSize.min,
         children: [
-          Icon(
+          AppIcon(
             icon,
             size: 12.5,
             color: AppColors.brand,
@@ -1022,7 +1023,7 @@ class _EmptyState
                   alpha: 0.07,
                 ),
               ),
-              child: Icon(
+              child: AppIcon(
                 Icons
                     .calendar_today_outlined,
                 size: 22,
@@ -1111,7 +1112,7 @@ class _ErrorState
           mainAxisSize:
               MainAxisSize.min,
           children: [
-            Icon(
+            AppIcon(
               Icons
                   .error_outline_rounded,
               size: 28,

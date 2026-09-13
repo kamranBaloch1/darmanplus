@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:darmaan/presentation/home/chat/chat_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -71,7 +72,7 @@ class _FollowUpEndCoordinatorState extends State<FollowUpEndCoordinator> {
                 const CircleAvatar(
                   radius: 30,
                   backgroundColor: Color(0xFFEDFAF1),
-                  child: Icon(
+                  child: AppIcon(
                     Icons.check_rounded,
                     color: Color(0xFF18A957),
                     size: 30,

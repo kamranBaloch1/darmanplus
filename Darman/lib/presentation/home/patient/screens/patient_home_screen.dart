@@ -14,13 +14,12 @@ import 'package:darmaan/widgets/app_bottom_nav_bar.dart';
 import 'package:darmaan/widgets/video_dilog.dart';
 import 'package:darmaan/widgets/guest_access.dart';
 import 'package:flutter/material.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:darmaan/presentation/home/patient/widgets/patient_doctor_list_tile.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   const PatientHomeScreen({super.key});
@@ -176,7 +175,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen>
       if (!mounted) return;
       if (_sameDoctorCatalogue(_lastDoctors, doctors)) return;
       _lastDoctors = doctors;
-      setState(() => _doctorsFuture = Future.value(doctors));
+      setState(() {
+        _doctorsFuture = Future.value(doctors);
+      });
     } catch (error) {
       debugPrint('Patient doctor refresh failed: $error');
     } finally {
@@ -219,18 +220,18 @@ class _PatientHomeScreenState extends State<PatientHomeScreen>
 
   static const _navItems = [
     NavBarItem(
-      icon:LucideIcons.stethoscope,
-      activeIcon:LucideIcons.stethoscope,
+      icon: Icons.medical_services_outlined,
+      activeIcon: Icons.medical_services_outlined,
       label: 'Doctors',
     ),
     NavBarItem(
-      icon: LucideIcons.wallet2300Dir,
-      activeIcon: LucideIcons.wallet2300Dir,
+      icon: Icons.account_balance_wallet_outlined,
+      activeIcon: Icons.account_balance_wallet_rounded,
       label: 'Wallet',
     ),
     NavBarItem(
-      icon:  LucideIcons.user,
-      activeIcon: LucideIcons.user,
+      icon: Icons.person_outline_rounded,
+      activeIcon: Icons.person_rounded,
       label: 'Profile',
     ),
   ];
@@ -262,7 +263,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen>
                   shape: BoxShape.circle,
                   border: Border.all(color: const Color(0xFFE6E9ED)),
                 ),
-                child: const Icon(
+                child: const AppIcon(
                   Icons.logout_rounded,
                   color: Color(0xFF344054),
                   size: 27,
@@ -420,6 +421,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen>
         ),
       ),
       bottomNavigationBar: AppBottomNavBar(
+        showShadow: false,
         items: _navItems,
         currentIndex: _currentTabIndex,
         onTap: (index) {
@@ -443,34 +445,30 @@ class _PatientHomeScreenState extends State<PatientHomeScreen>
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
+                padding: const EdgeInsets.fromLTRB(20, 8, 12, 8),
                 child: Row(
                   children: [
-                    Image.asset(logoHome, height: 36, fit: BoxFit.contain),
+                    Image.asset(logoHome, height: 30, fit: BoxFit.contain),
                     const Spacer(),
-                    InkWell(
-                      onTap: () => setState(() {
+                    IconButton(
+                      tooltip: _showSearch ? 'Close search' : 'Search doctors',
+                      constraints: const BoxConstraints.tightFor(
+                        width: 48,
+                        height: 48,
+                      ),
+                      onPressed: () => setState(() {
                         _showSearch = !_showSearch;
                         if (!_showSearch) {
                           _searchController.clear();
                           _searchQuery = '';
                         }
                       }),
-                      borderRadius: BorderRadius.circular(24),
-                      child: Container(
-                        width: 46,
-                        height: 46,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF1F4F8),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _showSearch
-                              ? Icons.close_rounded
-                              : Icons.search_rounded,
-                          size: 21,
-                          color: const Color(0xFF344054),
-                        ),
+                      icon: AppIcon(
+                        _showSearch
+                            ? Icons.close_rounded
+                            : Icons.search_rounded,
+                        size: _showSearch ? 24 : 21,
+                        color: const Color(0xFF344054),
                       ),
                     ),
                   ],
@@ -483,13 +481,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen>
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(18),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF17202C).withValues(alpha: .06),
-                          blurRadius: 18,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
                     ),
                     child: TextField(
                       controller: _searchController,
@@ -511,26 +502,34 @@ class _PatientHomeScreenState extends State<PatientHomeScreen>
                           fontSize: 13.5,
                           color: const Color(0xFF98A1AD),
                         ),
-                        prefixIcon: const Icon(
-                          Icons.search_rounded,
-                          size: 20,
-                          color: Color(0xFF485565),
+                        prefixIcon: const Padding(
+                          padding: EdgeInsets.only(left: 14, right: 10),
+                          child: AppIcon(
+                            Icons.search_rounded,
+                            size: 20,
+                            color: Color(0xFF485565),
+                          ),
+                        ),
+                        prefixIconConstraints: const BoxConstraints(
+                          minWidth: 44,
+                          minHeight: 48,
                         ),
                         suffixIcon: _searchQuery.isEmpty
                             ? null
                             : IconButton(
+                                tooltip: 'Clear search',
                                 onPressed: () {
                                   _searchController.clear();
                                   setState(() => _searchQuery = '');
                                 },
-                                icon: const Icon(
+                                icon: const AppIcon(
                                   Icons.cancel_rounded,
                                   size: 20,
                                   color: Color(0xFF9AA3AE),
                                 ),
                               ),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: const Color(0xFFF6F8FA),
                         contentPadding: const EdgeInsets.symmetric(
                           vertical: 14,
                           horizontal: 14,
@@ -588,8 +587,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen>
               };
               final doctors =
                   rankedDoctors.where((doctor) {
-                    if (_activeBookingByDoctor.containsKey(doctor.uid))
+                    if (_activeBookingByDoctor.containsKey(doctor.uid)) {
                       return true;
+                    }
                     if (_searchQuery.isEmpty) return true;
                     return '${doctor.name} ${doctor.specialization ?? ''} ${doctor.title ?? ''}'
                         .toLowerCase()
@@ -641,22 +641,19 @@ class _PatientHomeScreenState extends State<PatientHomeScreen>
                   physics: const AlwaysScrollableScrollPhysics(),
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: const EdgeInsets.fromLTRB(14, 15, 14, 32),
+                  padding: const EdgeInsets.only(bottom: 24),
                   itemCount: doctors.length,
-                
-                 
+
                   itemBuilder: (context, index) {
                     final doctor = doctors[index];
-                    final priorityBooking =
-                        _activeBookingByDoctor[doctor.uid];
-                    return _DoctorListTile(
+                    final priorityBooking = _activeBookingByDoctor[doctor.uid];
+                    return PatientDoctorListTile(
+                      key: ValueKey(doctor.uid),
                       doctor: doctor,
                       appointmentStatus: priorityBooking?.status,
                       followUpDate: priorityBooking?.followUpDate,
-                      onTap: () => _openConsultation(
-                        doctor,
-                        booking: priorityBooking,
-                      ),
+                      onTap: () =>
+                          _openConsultation(doctor, booking: priorityBooking),
                       onTapPhoto: () {
                         final hasVideo =
                             doctor.introVideoUrl != null &&
@@ -688,8 +685,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen>
     BookingStatus.pending => 2,
     _ => 3,
   };
-
-  
 }
 
 class _DoctorListShimmer extends StatefulWidget {
@@ -730,12 +725,11 @@ class _DoctorListShimmerState extends State<_DoctorListShimmer>
             ],
             stops: const [0.25, 0.5, 0.75],
           ).createShader(bounds),
-          child: ListView.separated(
+          child: ListView.builder(
             physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
-            itemCount: 6,
-            separatorBuilder: (_, __) => const SizedBox(height: 1),
-            itemBuilder: (_, __) => const _DoctorSkeletonRow(),
+            padding: const EdgeInsets.fromLTRB(22, 0, 22, 24),
+            itemCount: 7,
+            itemBuilder: (_, _) => const _DoctorSkeletonRow(),
           ),
         );
       },
@@ -751,11 +745,11 @@ class _DoctorSkeletonRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.symmetric(vertical: 15),
       child: Row(
         children: [
-          const CircleAvatar(radius: 30, backgroundColor: _color),
-          const SizedBox(width: 14),
+          const CircleAvatar(radius: 28, backgroundColor: _color),
+          const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -777,232 +771,10 @@ class _DoctorSkeletonRow extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Container(
-                  width: 92,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: _color,
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                ),
               ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            width: 48,
-            height: 11,
-            decoration: BoxDecoration(
-              color: _color,
-              borderRadius: BorderRadius.circular(6),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Doctors row 
-class _DoctorListTile extends StatelessWidget {
-  const _DoctorListTile({
-    required this.doctor,
-    required this.onTap,
-    required this.onTapPhoto,
-    this.appointmentStatus,
-    this.followUpDate,
-  });
-
-  final UserModel doctor;
-  final VoidCallback onTap;
-  final VoidCallback onTapPhoto;
-  final BookingStatus? appointmentStatus;
-  final DateTime? followUpDate;
-
-  @override
-  Widget build(BuildContext context) {
-    final image = doctor.profileImage?.trim();
-    final specialization = doctor.specialization?.trim();
-    final subtitle = (specialization != null && specialization.isNotEmpty)
-        ? specialization
-        : null;
-    final isAvailable = doctor.isAvailable;
-    final statusColor = isAvailable
-        ? const Color(0xFF20C86B)
-        : const Color(0xFF9AA3AE);
-    final isFollowUp =
-        appointmentStatus == BookingStatus.completed && followUpDate != null;
-    final appointmentLabel = isFollowUp
-        ? 'Follow-up'
-        : switch (appointmentStatus) {
-      BookingStatus.pending => 'Pending',
-      BookingStatus.accepted => 'Accepted',
-      BookingStatus.inProgress => 'In progress',
-      _ => null,
-    };
-    final appointmentColor = isFollowUp
-        ? const Color(0xFF175CD3)
-        : appointmentStatus == BookingStatus.inProgress
-        ? const Color(0xFF1570EF)
-        : appointmentStatus == BookingStatus.accepted
-        ? const Color(0xFF16834A)
-        : const Color(0xFFB26A00);
-    final appointmentBackground = isFollowUp
-        ? const Color(0xFFEAF3FF)
-        : appointmentStatus == BookingStatus.inProgress
-        ? const Color(0xFFEFF6FF)
-        : appointmentStatus == BookingStatus.accepted
-        ? const Color(0xFFEDF8F1)
-        : const Color(0xFFFFF6E8);
-
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Material(
-                  color: const Color(0xFFE7EFFB),
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    onTap: onTapPhoto,
-                    customBorder: const CircleBorder(),
-                    child: SizedBox(
-                      width: 60,
-                      height: 60,
-                      child: ClipOval(
-                        child: (image != null && image.isNotEmpty)
-                            ? CachedNetworkImage(
-                                imageUrl: image,
-                                fit: BoxFit.cover,
-                                errorWidget: (_, __, ___) => const Icon(
-                                  Icons.person_rounded,
-                                  size: 30,
-                                  color: AppColors.brand,
-                                ),
-                              )
-                            : const Icon(
-                                Icons.person_rounded,
-                                size: 30,
-                                color: AppColors.brand,
-                              ),
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: 1,
-                  bottom: 1,
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          doctor.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.outfit(
-                            fontSize: 16.5,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF17202C),
-                          ),
-                        ),
-                      ),
-                      if (doctor.isDoctorVerified) ...[
-                        const SizedBox(width:4 ),
-                        const Tooltip(
-                          message: 'Verified doctor',
-                          child: Icon(
-                            Icons.verified_rounded,
-                            size: 16,
-                            color: AppColors.brand,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                
-                
-                
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF8B929C),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-           Column(
-  mainAxisSize: MainAxisSize.min,
-  crossAxisAlignment: CrossAxisAlignment.end,
-  children: [
-    if (appointmentLabel != null)
-      Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 9,
-          vertical: 5,
-        ),
-        decoration: BoxDecoration(
-          color: appointmentBackground,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          appointmentLabel,
-          maxLines: 1,
-          style: GoogleFonts.outfit(
-            fontSize: 10.5,
-            fontWeight: FontWeight.w500,
-            color: appointmentColor,
-          ),
-        ),
-      ),
-    if (isFollowUp) ...[
-      const SizedBox(height: 4),
-      Text(
-        DateFormat('d MMM yyyy').format(followUpDate!),
-        style: GoogleFonts.outfit(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w500,
-          color: const Color(0xFF667085),
-        ),
-      ),
-    ],
-  ],
-),
-          
-          ],
-        ),
       ),
     );
   }
@@ -1020,7 +792,7 @@ class _MessageState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
       child: Column(
         children: [
-          Icon(icon, size: 34, color: AppColors.textSecondary),
+          AppIcon(icon, size: 34, color: AppColors.textSecondary),
           const SizedBox(height: 10),
           Text(
             message,

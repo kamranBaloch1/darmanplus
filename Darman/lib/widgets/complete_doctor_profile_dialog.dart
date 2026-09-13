@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 Future<void> showCompleteDoctorProfileDialog(BuildContext context) {
@@ -26,7 +27,7 @@ Future<void> showCompleteDoctorProfileDialog(BuildContext context) {
                 color: Color(0xFFF2F4F6),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: const AppIcon(
                 Icons.person_outline_rounded,
                 size: 28,
                 color: Color(0xFF344054),

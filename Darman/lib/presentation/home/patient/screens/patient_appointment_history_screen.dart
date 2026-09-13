@@ -4,6 +4,7 @@ import 'package:darmaan/core/theme/app_colors.dart';
 import 'package:darmaan/presentation/home/patient/repository/patient_repository.dart';
 import 'package:darmaan/presentation/home/patient/screens/doctor_details_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:darmaan/widgets/app_shimmer.dart';
 import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -236,14 +237,14 @@ class _PatientAppointmentHistoryScreenState
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               child: Row(children: [
-                Icon(Icons.calendar_month_outlined, size: 19,
+                AppIcon(Icons.calendar_month_outlined, size: 19,
                     color: AppColors.textSecondary),
                 const SizedBox(width: 10),
                 Expanded(child: Text(_selectorLabel, style: GoogleFonts.outfit(
                   fontSize: 14, fontWeight: FontWeight.w500,
                   color: Colors.black,
                 ))),
-                const Icon(Icons.expand_more_rounded, color: Colors.black),
+                const AppIcon(Icons.expand_more_rounded, color: Colors.black),
               ]),
             ),
           ),
@@ -366,7 +367,7 @@ class _HistoryCard extends StatelessWidget {
                   backgroundImage: hasImage
                       ? CachedNetworkImageProvider(doctor!.profileImage!)
                       : null,
-                  child: hasImage ? null : Icon(Icons.person_rounded,
+                  child: hasImage ? null : AppIcon(Icons.person_rounded,
                     color: AppColors.textSecondary, size: 22),
                 ),
                 const SizedBox(width: 12),
@@ -385,7 +386,7 @@ class _HistoryCard extends StatelessWidget {
                       )),
                       if (doctor?.isDoctorVerified == true) ...[
                         const SizedBox(width: 5),
-                        Icon(Icons.verified_rounded, size: 16, color: AppColors.brand),
+                        AppIcon(Icons.verified_rounded, size: 16, color: AppColors.brand),
                       ],
                     ]),
                     const SizedBox(height: 3),
@@ -415,7 +416,7 @@ class _HistoryCard extends StatelessWidget {
                   style: GoogleFonts.outfit(fontSize: 12,
                     color: AppColors.textSecondary)),
                 const SizedBox(width: 5),
-                Icon(expanded ? Icons.expand_less : Icons.expand_more,
+                AppIcon(expanded ? Icons.expand_less : Icons.expand_more,
                   size: 21, color: AppColors.textSecondary),
               ]),
               if ((completed && booking.followUpDate != null) ||
@@ -530,7 +531,7 @@ class _HistoryMetaPill extends StatelessWidget {
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: color),
+        AppIcon(icon, size: 14, color: color),
         const SizedBox(width: 5),
         Text(
           text,
@@ -567,7 +568,7 @@ class _MessageState extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         SizedBox(height: MediaQuery.sizeOf(context).height * 0.16),
-        Icon(icon, size: 54, color: Colors.grey.shade300),
+        AppIcon(icon, size: 54, color: Colors.grey.shade300),
         const SizedBox(height: 14),
         Text(title, textAlign: TextAlign.center, style: GoogleFonts.outfit(
           fontSize: 16, fontWeight: FontWeight.w500, color: AppColors.textPrimary,

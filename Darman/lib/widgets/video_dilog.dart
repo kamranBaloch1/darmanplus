@@ -3,17 +3,15 @@ import 'dart:async';
 import 'package:darmaan/core/models/user_model.dart';
 import 'package:darmaan/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
 /// Convenience helper so callers don't need to construct the dialog
 /// themselves. Does nothing if the doctor has no intro video.
 ///
-/// Pass [onViewDetails] to show a "View Details" button under the video that
-/// closes the dialog and forwards to your details navigation. Callers that
-/// don't pass it (other places this dialog is used) get the plain video
-/// dialog with no button, unchanged.
+/// [onViewDetails] remains in the public signature for existing callers, but
+/// the compact player intentionally contains no secondary profile action.
 Future<void> showDoctorVideoDialog(
   BuildContext context,
   UserModel doctor, {
@@ -25,11 +23,9 @@ Future<void> showDoctorVideoDialog(
 
   return showDialog(
     context: context,
-    barrierColor: Colors.black87,
-    builder: (_) => DoctorVideoDialog(
-      doctor: doctor,
-      onViewDetails: onViewDetails,
-    ),
+    barrierColor: Colors.black.withValues(alpha: 0.78),
+    builder: (_) =>
+        DoctorVideoDialog(doctor: doctor, onViewDetails: onViewDetails),
   );
 }
 
@@ -40,12 +36,15 @@ Future<void> showDoctorVideoDialog(
 class DoctorVideoDialog extends StatefulWidget {
   final UserModel doctor;
 
-  /// When provided, a "View Details" button is shown below the video.
-  /// Tapping it closes the dialog and invokes this callback. Leave null to
-  /// keep this dialog exactly as it is used elsewhere in the app.
+  /// Retained for source compatibility with existing call sites. The compact
+  /// player deliberately keeps profile navigation outside the video frame.
   final VoidCallback? onViewDetails;
 
-  const DoctorVideoDialog({super.key, required this.doctor, this.onViewDetails});
+  const DoctorVideoDialog({
+    super.key,
+    required this.doctor,
+    this.onViewDetails,
+  });
 
   @override
   State<DoctorVideoDialog> createState() => _DoctorVideoDialogState();
@@ -78,9 +77,7 @@ class _DoctorVideoDialogState extends State<DoctorVideoDialog> {
 
     VideoPlayerController? candidate;
     try {
-      candidate = VideoPlayerController.networkUrl(
-        videoUri,
-      );
+      candidate = VideoPlayerController.networkUrl(videoUri);
       await candidate.initialize().timeout(const Duration(seconds: 25));
       await candidate.setLooping(false);
       await candidate.play();
@@ -109,7 +106,10 @@ class _DoctorVideoDialogState extends State<DoctorVideoDialog> {
 
   void _onPlayerStateChanged() {
     final controller = _controller;
-    if (!mounted || controller == null || !controller.value.hasError || _hasError) {
+    if (!mounted ||
+        controller == null ||
+        !controller.value.hasError ||
+        _hasError) {
       return;
     }
     setState(() => _hasError = true);
@@ -140,85 +140,69 @@ class _DoctorVideoDialogState extends State<DoctorVideoDialog> {
     super.dispose();
   }
 
-  void _handleViewDetails() {
-    final onViewDetails = widget.onViewDetails;
-    Navigator.of(context).pop();
-    if (onViewDetails != null) onViewDetails();
-  }
-
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    final maxDialogWidth = screenSize.width < 480 ? screenSize.width * 0.9 : 420.0;
-    final maxDialogHeight = screenSize.height * 0.6;
-    final showViewDetailsButton = widget.onViewDetails != null;
+    final availableWidth = screenSize.width * 0.78;
+    final maxDialogWidth = availableWidth > 340 ? 340.0 : availableWidth;
+    final maxDialogHeight = screenSize.height * 0.56;
+    final videoAspectRatio =
+        _controller?.value.isInitialized == true &&
+            (_controller?.value.aspectRatio ?? 0) > 0
+        ? _controller!.value.aspectRatio
+        : 9 / 16;
+
+    var dialogWidth = maxDialogWidth;
+    var dialogHeight = dialogWidth / videoAspectRatio;
+    if (dialogHeight > maxDialogHeight) {
+      dialogHeight = maxDialogHeight;
+      dialogWidth = dialogHeight * videoAspectRatio;
+    }
 
     return Dialog(
-      backgroundColor: Colors.black,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxDialogWidth),
-          // Fixed total height so the video area can never push the button
-          // (or itself) past the bottom of the dialog, regardless of the
-          // video's own aspect ratio (portrait clips included).
-          child: SizedBox(
-            height: maxDialogHeight,
-            child: Column(
-              children: [
-                Expanded(
-                  child: _hasError
-                      ? _VideoErrorState(onRetry: _retry)
-                      : (_isLoading || _controller == null
-                          ? const _VideoLoadingState()
-                          // Center + AspectRatio here (inside a bounded
-                          // Expanded box) letterboxes the video to fit both
-                          // the available width and height instead of
-                          // forcing height purely from width.
-                          : Center(
-                              child: AspectRatio(
-                                aspectRatio: _controller!.value.aspectRatio,
-                                child: _VideoPlayerWithControls(
-                                  controller: _controller!,
-                                  title: widget.doctor.name,
-                                  onClose: () => Navigator.of(context).pop(),
-                                ),
-                              ),
-                            )),
-                ),
-                if (showViewDetailsButton)
-                  Container(
-                    width: double.infinity,
-                    color: Colors.black,
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-                    child: Center(
-                      child: SizedBox(
-                        height: 38,
-                        child: FilledButton.icon(
-                          onPressed: _handleViewDetails,
-                          icon: const Icon(Icons.arrow_forward_rounded, size: 15),
-                          label: Text(
-                            'View Details',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.brand,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            shape: const StadiumBorder(),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 64),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        width: dialogWidth,
+        height: dialogHeight,
+        decoration: BoxDecoration(
+          color: const Color(0xFF090B0F),
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x52000000),
+              blurRadius: 32,
+              offset: Offset(0, 18),
             ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(31),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (_hasError)
+                _VideoErrorState(onRetry: _retry)
+              else if (_isLoading || _controller == null)
+                const _VideoLoadingState()
+              else
+                _VideoPlayerWithControls(controller: _controller!),
+              Positioned(
+                top: 12,
+                right: 12,
+                child: _IconCircleButton(
+                  icon: Icons.close_rounded,
+                  size: 20,
+                  padding: 9,
+                  background: Colors.black.withValues(alpha: 0.42),
+                  onTap: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -227,20 +211,11 @@ class _DoctorVideoDialogState extends State<DoctorVideoDialog> {
 }
 
 /// Custom control surface layered on top of a raw `VideoPlayer`. Handles
-/// play/pause, a draggable seek bar, elapsed/remaining time, mute, a
-/// fullscreen route, and auto-hiding the control bar during playback.
+/// play/pause, a draggable seek bar, mute, and auto-hiding controls.
 class _VideoPlayerWithControls extends StatefulWidget {
   final VideoPlayerController controller;
-  final String title;
-  final VoidCallback onClose;
-  final bool isFullscreen;
 
-  const _VideoPlayerWithControls({
-    required this.controller,
-    required this.title,
-    required this.onClose,
-    this.isFullscreen = false,
-  });
+  const _VideoPlayerWithControls({required this.controller});
 
   @override
   State<_VideoPlayerWithControls> createState() =>
@@ -275,7 +250,7 @@ class _VideoPlayerWithControlsState extends State<_VideoPlayerWithControls> {
 
   void _resetHideTimer() {
     _hideTimer?.cancel();
-    _hideTimer = Timer(const Duration(seconds: 3), () {
+    _hideTimer = Timer(const Duration(milliseconds: 2400), () {
       if (mounted && _controller.value.isPlaying && !_isDragging) {
         setState(() => _showControls = false);
       }
@@ -302,25 +277,6 @@ class _VideoPlayerWithControlsState extends State<_VideoPlayerWithControls> {
     setState(() {});
   }
 
-  void _openFullscreen() {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        opaque: true,
-        pageBuilder: (_, __, ___) => _FullscreenVideoPage(
-          controller: _controller,
-          title: widget.title,
-        ),
-      ),
-    );
-  }
-
-  String _formatDuration(Duration d) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final minutes = twoDigits(d.inMinutes.remainder(60));
-    final seconds = twoDigits(d.inSeconds.remainder(60));
-    return d.inHours > 0 ? '${d.inHours}:$minutes:$seconds' : '$minutes:$seconds';
-  }
-
   @override
   Widget build(BuildContext context) {
     final value = _controller.value;
@@ -344,37 +300,36 @@ class _VideoPlayerWithControlsState extends State<_VideoPlayerWithControls> {
         children: [
           VideoPlayer(_controller),
 
-         // Buffering indicator — soft dark backdrop, brand-colored spinner,
-// fades in/out instead of popping so brief stalls don't flicker.
-// Wrapped in Align so StackFit.expand doesn't stretch the circular
-// decoration to fill the whole video frame.
-Align(
-  alignment: Alignment.center,
-  child: AnimatedOpacity(
-    opacity: value.isBuffering ? 1 : 0,
-    duration: const Duration(milliseconds: 200),
-    child: IgnorePointer(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: const BoxDecoration(
-          color: Colors.black45,
-          shape: BoxShape.circle,
-        ),
-        child: const SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(
-            color: AppColors.brand,
-            strokeWidth: 2.5,
+          // Buffering indicator — soft dark backdrop, brand-colored spinner,
+          // fades in/out instead of popping so brief stalls don't flicker.
+          // Wrapped in Align so StackFit.expand doesn't stretch the circular
+          // decoration to fill the whole video frame.
+          Align(
+            alignment: Alignment.center,
+            child: AnimatedOpacity(
+              opacity: value.isBuffering ? 1 : 0,
+              duration: const Duration(milliseconds: 200),
+              child: IgnorePointer(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: const BoxDecoration(
+                    color: Colors.black45,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: AppColors.brand,
+                      strokeWidth: 2.5,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
-    ),
-  ),
-),
 
-
-          // Dim overlay + controls, only when visible.
+          // A light-touch overlay keeps the video itself as the focus.
           AnimatedOpacity(
             opacity: _showControls ? 1 : 0,
             duration: const Duration(milliseconds: 200),
@@ -386,78 +341,52 @@ Align(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withValues(alpha: 0.45),
+                      Colors.black.withValues(alpha: 0.18),
                       Colors.transparent,
                       Colors.transparent,
-                      Colors.black.withValues(alpha: 0.55),
+                      Colors.black.withValues(alpha: 0.42),
                     ],
-                    stops: const [0, 0.25, 0.6, 1],
+                    stops: const [0, 0.22, 0.62, 1],
                   ),
                 ),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    // Top bar: title + close.
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 8, 8, 0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              widget.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.outfit(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          if (!widget.isFullscreen)
-                            _IconCircleButton(
-                              icon: Icons.close_rounded,
-                              onTap: widget.onClose,
-                            )
-                          else
-                            _IconCircleButton(
-                              icon: Icons.fullscreen_exit_rounded,
-                              onTap: () => Navigator.of(context).pop(),
-                            ),
-                        ],
+                    Expanded(
+                      child: Center(
+                        child: _IconCircleButton(
+                          icon: value.isPlaying
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          size: 28,
+                          padding: 13,
+                          background: Colors.black.withValues(alpha: 0.34),
+                          onTap: _togglePlayPause,
+                        ),
                       ),
                     ),
 
-                    // Center play/pause.
-                    _IconCircleButton(
-                      icon: value.isPlaying
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                      size: 30,
-                      padding: 14,
-                      background: Colors.black45,
-                      onTap: _togglePlayPause,
-                    ),
-
-                    // Bottom bar: seek + time + mute + fullscreen.
+                    // Minimal bottom controls: progress and sound only.
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(10, 0, 14, 6),
+                      padding: const EdgeInsets.fromLTRB(14, 0, 12, 12),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           SliderTheme(
                             data: SliderTheme.of(context).copyWith(
-                              trackHeight: 2.5,
+                              trackHeight: 2,
                               thumbShape: const RoundSliderThumbShape(
-                                enabledThumbRadius: 6,
+                                enabledThumbRadius: 5,
                               ),
                               overlayShape: const RoundSliderOverlayShape(
-                                overlayRadius: 14,
+                                overlayRadius: 12,
                               ),
                               activeTrackColor: AppColors.brand,
-                              inactiveTrackColor: Colors.white24,
+                              inactiveTrackColor: Colors.white30,
                               thumbColor: AppColors.brand,
-                              overlayColor: AppColors.brand.withValues(alpha: 0.2),
+                              overlayColor: AppColors.brand.withValues(
+                                alpha: 0.2,
+                              ),
                             ),
                             child: Slider(
                               min: 0,
@@ -477,51 +406,17 @@ Align(
                               },
                             ),
                           ),
-                          Row(
-                            children: [
-                              Text(
-                                _formatDuration(position),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                ),
-                              ),
-                              const Text(
-                                ' / ',
-                                style: TextStyle(color: Colors.white54, fontSize: 11),
-                              ),
-                              Text(
-                                _formatDuration(duration),
-                                style: const TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 11,
-                                ),
-                              ),
-                              const Spacer(),
-                              InkWell(
-                                onTap: _toggleMute,
-                                child: Icon(
-                                  value.volume == 0
-                                      ? Icons.volume_off_rounded
-                                      : Icons.volume_up_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              InkWell(
-                                onTap: widget.isFullscreen
-                                    ? () => Navigator.of(context).pop()
-                                    : _openFullscreen,
-                                child: Icon(
-                                  widget.isFullscreen
-                                      ? Icons.fullscreen_exit_rounded
-                                      : Icons.fullscreen_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            ],
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: _IconCircleButton(
+                              icon: value.volume == 0
+                                  ? Icons.volume_off_rounded
+                                  : Icons.volume_up_rounded,
+                              onTap: _toggleMute,
+                              size: 17,
+                              padding: 8,
+                              background: Colors.black.withValues(alpha: 0.28),
+                            ),
                           ),
                         ],
                       ),
@@ -562,67 +457,7 @@ class _IconCircleButton extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: EdgeInsets.all(padding),
-          child: Icon(icon, color: Colors.white, size: size),
-        ),
-      ),
-    );
-  }
-}
-
-/// Landscape, edge-to-edge fullscreen route reusing the same controller —
-/// playback position and state carry over seamlessly.
-class _FullscreenVideoPage extends StatefulWidget {
-  final VideoPlayerController controller;
-  final String title;
-
-  const _FullscreenVideoPage({required this.controller, required this.title});
-
-  @override
-  State<_FullscreenVideoPage> createState() => _FullscreenVideoPageState();
-}
-
-class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
-  @override
-  void initState() {
-    super.initState();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  }
-
-  @override
-  void dispose() {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return PopScope(
-      onPopInvokedWithResult: (_, __) {
-        SystemChrome.setPreferredOrientations([
-          DeviceOrientation.portraitUp,
-          DeviceOrientation.portraitDown,
-        ]);
-      },
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
-          child: AspectRatio(
-            aspectRatio: widget.controller.value.aspectRatio,
-            child: _VideoPlayerWithControls(
-              controller: widget.controller,
-              title: widget.title,
-              isFullscreen: true,
-              onClose: () => Navigator.of(context).pop(),
-            ),
-          ),
+          child: AppIcon(icon, color: Colors.white, size: size),
         ),
       ),
     );
@@ -679,7 +514,11 @@ class _VideoErrorState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline_rounded, color: Colors.white70, size: 28),
+          const AppIcon(
+            Icons.error_outline_rounded,
+            color: Colors.white70,
+            size: 28,
+          ),
           const SizedBox(height: 8),
           Text(
             'Video could not load',
@@ -688,7 +527,7 @@ class _VideoErrorState extends StatelessWidget {
           const SizedBox(height: 12),
           TextButton.icon(
             onPressed: onRetry,
-            icon: const Icon(Icons.refresh_rounded, size: 17),
+            icon: const AppIcon(Icons.refresh_rounded, size: 17),
             label: Text('Try again', style: GoogleFonts.outfit()),
             style: TextButton.styleFrom(foregroundColor: Colors.white),
           ),

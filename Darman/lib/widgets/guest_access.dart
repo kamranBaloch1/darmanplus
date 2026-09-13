@@ -1,6 +1,7 @@
 import 'package:darmaan/core/theme/app_colors.dart';
 import 'package:darmaan/presentation/auth/screens/login/login_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -50,7 +51,7 @@ Future<void> showLoginRequiredDialog(
                   borderRadius: BorderRadius.circular(17.r),
                 ),
                 alignment: Alignment.center,
-                child: Icon(
+                child: AppIcon(
                   Icons.lock_outline_rounded,
                   size: 25.sp,
                   color: AppColors.brand,
@@ -192,7 +193,7 @@ class GuestAccessView extends StatelessWidget {
                     border: Border.all(color: const Color(0xFFE9EBEF)),
                   ),
                   alignment: Alignment.center,
-                  child: Icon(icon, size: 28.sp, color: AppColors.brand),
+                  child: AppIcon(icon, size: 28.sp, color: AppColors.brand),
                 ),
 
                 SizedBox(height: 24.h),

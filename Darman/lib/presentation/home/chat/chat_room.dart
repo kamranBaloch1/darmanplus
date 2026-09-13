@@ -19,6 +19,7 @@ import 'package:darmaan/widgets/app_shimmer.dart';
 import 'package:file_picker/file_picker.dart' as fp;
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:gal/gal.dart';
@@ -139,16 +140,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   }
 
   @override
-  void didChangeAppLifecycleState(
-    AppLifecycleState state,
-  ) {
+  void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) {
       _setLocalTyping(false);
       _setLocalRecordingStatus(false);
       unawaited(_setChatPresence(false));
     }
-    if (state == AppLifecycleState.resumed &&
-        _room != null) {
+    if (state == AppLifecycleState.resumed && _room != null) {
       unawaited(_setChatPresence(true));
       if (_recording) {
         _setLocalRecordingStatus(true);
@@ -163,9 +161,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
   Future<void> _initialize() async {
     try {
-      final room = await _repository.getOrCreateRoom(
-        widget.bookingId,
-      );
+      final room = await _repository.getOrCreateRoom(widget.bookingId);
 
       if (!mounted) return;
 
@@ -182,61 +178,53 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       _subscription = _repository
           .watchLatestMessages(room.id)
           .listen(
-        (latest) {
-          if (!mounted) return;
+            (latest) {
+              if (!mounted) return;
 
-          final shouldScroll =
-              _messages.isEmpty || _isNearBottom;
+              final shouldScroll = _messages.isEmpty || _isNearBottom;
 
-          setState(() {
-            final older = _messages.where(
-              (old) => !latest.any(
-                (current) => current.id == old.id,
-              ),
-            );
+              setState(() {
+                final older = _messages.where(
+                  (old) => !latest.any((current) => current.id == old.id),
+                );
 
-            _messages
-              ..clear()
-              ..addAll(
-                [
-                  ...older,
-                  ...latest,
-                ]..sort(
-                    (a, b) => a.createdAt.compareTo(
-                      b.createdAt,
-                    ),
-                  ),
-              );
-          });
+                _messages
+                  ..clear()
+                  ..addAll(
+                    [...older, ...latest]
+                      ..sort((a, b) => a.createdAt.compareTo(b.createdAt)),
+                  );
+              });
 
-          if (shouldScroll) {
-            _scrollToBottom();
-          }
+              if (shouldScroll) {
+                _scrollToBottom();
+              }
 
-          _markSeen();
-        },
-        onError: (Object error) {
-          if (!mounted) return;
+              _markSeen();
+            },
+            onError: (Object error) {
+              if (!mounted) return;
 
-          setState(() {
-            _error = _readableError(error);
-          });
-        },
-      );
+              setState(() {
+                _error = _readableError(error);
+              });
+            },
+          );
 
       // -----------------------------------------------------------------------
       // WATCH CONSULTATION SESSION
       // -----------------------------------------------------------------------
 
-      _sessionSubscription =
-          _repository.watchSession(room.bookingId).listen(
-        (session) {
-          if (!mounted) return;
+      _sessionSubscription = _repository
+          .watchSession(room.bookingId)
+          .listen(
+            (session) {
+              if (!mounted) return;
 
-          setState(() {
-            _session = session;
-          });
-          _scheduleSessionRequestExpiry(session);
+              setState(() {
+                _session = session;
+              });
+              _scheduleSessionRequestExpiry(session);
 
               if (_isDoctor &&
                   session.bookingStatus == 'completed' &&
@@ -247,13 +235,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                   !session.hasUnendedFollowUp) {
                 _leaveCompletedPatientChat();
               }
-        },
-        onError: (Object error) {
-          if (mounted) {
-            _showError(error);
-          }
-        },
-      );
+            },
+            onError: (Object error) {
+              if (mounted) {
+                _showError(error);
+              }
+            },
+          );
 
       await _markSeen();
     } catch (error) {
@@ -493,13 +481,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     if (room == null) return;
 
     try {
-      await _repository.markRoomDelivered(
-        room.id,
-      );
+      await _repository.markRoomDelivered(room.id);
 
-      await _repository.markRoomRead(
-        room.id,
-      );
+      await _repository.markRoomRead(room.id);
     } catch (_) {}
   }
 
@@ -512,12 +496,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       return true;
     }
 
-    final position =
-        _scrollController.position;
+    final position = _scrollController.position;
 
-    return position.maxScrollExtent -
-            position.pixels <
-        180;
+    return position.maxScrollExtent - position.pixels < 180;
   }
 
   void _onScroll() {
@@ -535,9 +516,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   Future<void> _loadOlder() async {
     final room = _room;
 
-    if (room == null ||
-        _messages.isEmpty ||
-        _loadingOlder) {
+    if (room == null || _messages.isEmpty || _loadingOlder) {
       return;
     }
 
@@ -546,8 +525,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     });
 
     try {
-      final older =
-          await _repository.loadOlderMessages(
+      final older = await _repository.loadOlderMessages(
         roomId: room.id,
         before: _messages.first.createdAt,
       );
@@ -555,15 +533,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       if (!mounted) return;
 
       setState(() {
-        _hasMore =
-            older.length == ChatRepository.pageSize;
+        _hasMore = older.length == ChatRepository.pageSize;
 
         _messages.insertAll(
           0,
           older.where(
-            (item) => !_messages.any(
-              (current) => current.id == item.id,
-            ),
+            (item) => !_messages.any((current) => current.id == item.id),
           ),
         );
       });
@@ -593,7 +568,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
     final key = _messageKeys.putIfAbsent(messageId, () => GlobalKey());
     if (_scrollController.hasClients && _messages.length > 1) {
-      final estimatedOffset = _scrollController.position.maxScrollExtent *
+      final estimatedOffset =
+          _scrollController.position.maxScrollExtent *
           (index / (_messages.length - 1));
       await _scrollController.animateTo(
         estimatedOffset
@@ -629,21 +605,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   }
 
   void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) {
-        if (!_scrollController.hasClients) {
-          return;
-        }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) {
+        return;
+      }
 
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(
-            milliseconds: 220,
-          ),
-          curve: Curves.easeOut,
-        );
-      },
-    );
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   // ===========================================================================
@@ -673,7 +645,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     }
 
     if (!isFollowUp && freshSession.bookingStatus == 'completed') {
-      throw const ChatException('The follow-up chat is not available for this booking.');
+      throw const ChatException(
+        'The follow-up chat is not available for this booking.',
+      );
     }
     if (!isFollowUp) {
       return false;
@@ -766,7 +740,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
         failedMessage.text?.trim().isEmpty != false) {
       return;
     }
-    setState(() => _messages.removeWhere((item) => item.id == failedMessage.id));
+    setState(
+      () => _messages.removeWhere((item) => item.id == failedMessage.id),
+    );
     _textController.text = failedMessage.text!;
     _textController.selection = TextSelection.collapsed(
       offset: _textController.text.length,
@@ -788,7 +764,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
     final path = failedMessage.mediaUrl;
     if (path == null || !await File(path).exists()) {
-      _showError(const ChatException('This attachment is no longer available.'));
+      _showError(
+        const ChatException('This attachment is no longer available.'),
+      );
       return;
     }
 
@@ -800,9 +778,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       File(path),
       failedMessage.type,
       failedMessage.fileName ??
-          (failedMessage.type == MessageType.voice
-              ? 'voice.m4a'
-              : 'image.jpg'),
+          (failedMessage.type == MessageType.voice ? 'voice.m4a' : 'image.jpg'),
       failedMessage.mimeType ??
           (failedMessage.type == MessageType.voice
               ? 'audio/mp4'
@@ -815,13 +791,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   // IMAGE
   // ===========================================================================
 
-  Future<void> _pickImage(
-    ImageSource source,
-  ) async {
+  Future<void> _pickImage(ImageSource source) async {
     Navigator.pop(context);
 
-    final picked =
-        await ImagePicker().pickImage(
+    final picked = await ImagePicker().pickImage(
       source: source,
       imageQuality: 88,
       maxWidth: 2400,
@@ -844,8 +817,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   Future<void> _pickDocument() async {
     Navigator.pop(context);
 
-    final fp.PlatformFile? item =
-        await fp.FilePicker.pickFile(
+    final fp.PlatformFile? item = await fp.FilePicker.pickFile(
       type: fp.FileType.custom,
       allowedExtensions: [
         'pdf',
@@ -866,9 +838,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       File(item!.path!),
       MessageType.file,
       item.name,
-      _mimeForFileName(
-        item.name,
-      ),
+      _mimeForFileName(item.name),
     );
   }
 
@@ -885,8 +855,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   }) async {
     var room = _room;
 
-    if (room == null ||
-        _sending) {
+    if (room == null || _sending) {
       return;
     }
 
@@ -996,16 +965,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       return;
     }
 
-    final directory =
-        await getTemporaryDirectory();
+    final directory = await getTemporaryDirectory();
 
     final path =
         '${directory.path}/voice-${DateTime.now().millisecondsSinceEpoch}.m4a';
 
     await _recorder.start(
-      const RecordConfig(
-        encoder: AudioEncoder.aacLc,
-      ),
+      const RecordConfig(encoder: AudioEncoder.aacLc),
       path: path,
     );
 
@@ -1026,22 +992,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     _amplitudeSubscription = _recorder
         .onAmplitudeChanged(const Duration(milliseconds: 140))
         .listen((amplitude) {
-      if (!mounted || !_recording || _recordingPaused) return;
-      final raw = ((amplitude.current + 55) / 55).clamp(0.0, 1.0);
-      final previous = _recordingWaveform.last;
-      final smoothed = (previous * .62 + raw * .38).clamp(.06, 1.0);
-      setState(() {
-        _recordingWaveform = [
-          ..._recordingWaveform.skip(1),
-          smoothed,
-        ];
-      });
-    });
+          if (!mounted || !_recording || _recordingPaused) return;
+          final raw = ((amplitude.current + 55) / 55).clamp(0.0, 1.0);
+          final previous = _recordingWaveform.last;
+          final smoothed = (previous * .62 + raw * .38).clamp(.06, 1.0);
+          setState(() {
+            _recordingWaveform = [..._recordingWaveform.skip(1), smoothed];
+          });
+        });
 
     _startRecordingTimer();
   }
 
-  void _startRecordingTimer() async{
+  void _startRecordingTimer() async {
     _recordingTimer?.cancel();
     await _amplitudeSubscription?.cancel();
     _amplitudeSubscription = null;
@@ -1061,8 +1024,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       if (_recordingPaused) {
         // Resume: rebase the "started at" so elapsed keeps counting correctly.
         await _recorder.resume();
-        _recordingStartedAt =
-            DateTime.now().subtract(_recordingElapsed);
+        _recordingStartedAt = DateTime.now().subtract(_recordingElapsed);
         _startRecordingTimer();
       } else {
         await _recorder.pause();
@@ -1087,8 +1049,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     _recordingTimer?.cancel();
     _setLocalRecordingStatus(false);
 
-    final elapsedSeconds =
-        _recordingElapsed.inSeconds.clamp(1, 3600).toInt();
+    final elapsedSeconds = _recordingElapsed.inSeconds.clamp(1, 3600).toInt();
 
     final path = await _recorder.stop();
 
@@ -1135,9 +1096,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       builder: (_) {
         return _AttachmentSheet(
           onCamera: () {
-            _pickImage(
-              ImageSource.camera,
-            );
+            _pickImage(ImageSource.camera);
           },
           onGallery: () {
             _pickImage(ImageSource.gallery);
@@ -1152,13 +1111,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   // DELETE MESSAGE
   // ===========================================================================
 
-  Future<void> _delete(
-    ChatMessageModel message,
-  ) async {
+  Future<void> _delete(ChatMessageModel message) async {
     try {
-      await _repository.deleteForEveryone(
-        message,
-      );
+      await _repository.deleteForEveryone(message);
     } catch (error) {
       _showError(error);
     }
@@ -1168,16 +1123,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   // SESSION
   // ===========================================================================
 
-  bool get _isDoctor =>
-      _room?.doctorId ==
-      _repository.currentUserId;
+  bool get _isDoctor => _room?.doctorId == _repository.currentUserId;
 
   int get _myPreSessionMessageCount {
     return _messages
         .where(
           (message) =>
-              message.senderId ==
-                  _repository.currentUserId &&
+              message.senderId == _repository.currentUserId &&
               message.type != MessageType.system &&
               message.status != MessageStatus.failed,
         )
@@ -1186,8 +1138,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
   bool get _preSessionLimitReached {
     return _session?.bookingStatus == 'accepted' &&
-        _myPreSessionMessageCount >=
-            ChatRepository.preSessionMessageLimit;
+        _myPreSessionMessageCount >= ChatRepository.preSessionMessageLimit;
   }
 
   // ===========================================================================
@@ -1202,9 +1153,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     });
 
     try {
-      await _repository.requestSessionStart(
-        widget.bookingId,
-      );
+      await _repository.requestSessionStart(widget.bookingId);
     } catch (error) {
       _showError(error);
     } finally {
@@ -1254,7 +1203,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                 color: Color(0xFFF2F4F6),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: const AppIcon(
                 Icons.event_busy_outlined,
                 color: Color(0xFF475467),
                 size: 25,
@@ -1356,72 +1305,47 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   // ===========================================================================
 
   Future<void> _showPatientSessionDialog() async {
-    if (_sessionDialogVisible ||
-        !mounted) {
+    if (_sessionDialogVisible || !mounted) {
       return;
     }
 
     _sessionDialogVisible = true;
 
-    final accepted =
-        await showDialog<bool>(
+    final accepted = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      barrierColor:
-          Colors.black.withValues(
-        alpha: 0.50,
-      ),
+      barrierColor: Colors.black.withValues(alpha: 0.50),
       builder: (dialogContext) {
         return Dialog(
           elevation: 0,
           backgroundColor: Colors.transparent,
-          insetPadding:
-              const EdgeInsets.symmetric(
-            horizontal: 24,
-          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
           child: Container(
             width: double.infinity,
-            padding:
-                const EdgeInsets.fromLTRB(
-              24,
-              28,
-              24,
-              20,
-            ),
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius:
-                  BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
-              mainAxisSize:
-                  MainAxisSize.min,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 _DialogIcon(
-                  icon: Icons
-                      .medical_services_outlined,
-                  backgroundColor:
-                      AppColors.brand.withValues(
-                    alpha: 0.08,
-                  ),
-                  iconColor:
-                      AppColors.brand,
+                  icon: Icons.medical_services_outlined,
+                  backgroundColor: AppColors.brand.withValues(alpha: 0.08),
+                  iconColor: AppColors.brand,
                 ),
 
                 const SizedBox(height: 20),
 
                 Text(
                   'Start consultation?',
-                  textAlign:
-                      TextAlign.center,
-                  style:
-                      GoogleFonts.outfit(
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
                     fontSize: 20,
-                    fontWeight:
-                        FontWeight.w500,
+                    fontWeight: FontWeight.w500,
                     letterSpacing: -0.35,
-                    color:
-                        AppColors.textPrimary,
+                    color: AppColors.textPrimary,
                   ),
                 ),
 
@@ -1429,14 +1353,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
                 Text(
                   '${widget.peerName} is ready to begin your consultation.',
-                  textAlign:
-                      TextAlign.center,
-                  style:
-                      GoogleFonts.outfit(
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
                     fontSize: 13,
                     height: 1.5,
-                    color: AppColors
-                        .textSecondary,
+                    color: AppColors.textSecondary,
                   ),
                 ),
 
@@ -1444,14 +1365,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
                 Text(
                   'Once you start, the consultation becomes active and this appointment can no longer be cancelled.',
-                  textAlign:
-                      TextAlign.center,
-                  style:
-                      GoogleFonts.outfit(
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
                     fontSize: 11.5,
                     height: 1.5,
-                    color: AppColors
-                        .textSecondary,
+                    color: AppColors.textSecondary,
                   ),
                 ),
 
@@ -1462,33 +1380,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                   height: 48,
                   child: FilledButton(
                     onPressed: () {
-                      Navigator.pop(
-                        dialogContext,
-                        true,
-                      );
+                      Navigator.pop(dialogContext, true);
                     },
-                    style:
-                        FilledButton.styleFrom(
+                    style: FilledButton.styleFrom(
                       elevation: 0,
-                      backgroundColor:
-                          AppColors.brand,
-                      foregroundColor:
-                          Colors.white,
-                      shape:
-                          RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(
-                          13,
-                        ),
+                      backgroundColor: AppColors.brand,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(13),
                       ),
                     ),
                     child: Text(
                       'Start consultation',
-                      style:
-                          GoogleFonts.outfit(
+                      style: GoogleFonts.outfit(
                         fontSize: 14,
-                        fontWeight:
-                            FontWeight.w500,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
@@ -1501,20 +1407,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                   height: 42,
                   child: TextButton(
                     onPressed: () {
-                      Navigator.pop(
-                        dialogContext,
-                        false,
-                      );
+                      Navigator.pop(dialogContext, false);
                     },
                     child: Text(
                       'Not now',
-                      style:
-                          GoogleFonts.outfit(
+                      style: GoogleFonts.outfit(
                         fontSize: 13,
-                        fontWeight:
-                            FontWeight.w500,
-                        color: AppColors
-                            .textSecondary,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ),
@@ -1528,8 +1428,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
     _sessionDialogVisible = false;
 
-    if (accepted == null ||
-        !mounted) {
+    if (accepted == null || !mounted) {
       return;
     }
 
@@ -1548,8 +1447,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   // ===========================================================================
 
   Future<void> _startVideoCall() async {
-    if ((_session?.isInProgress != true &&
-            _session?.isFollowUpOpen != true) ||
+    if ((_session?.isInProgress != true && _session?.isFollowUpOpen != true) ||
         _callStarting) {
       return;
     }
@@ -1559,15 +1457,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     });
 
     try {
-      final invite =
-          await _callInviteRepository.startCall(
-        widget.bookingId,
-      );
+      final invite = await _callInviteRepository.startCall(widget.bookingId);
 
       if (!mounted) return;
 
-      final outcome =
-          await Navigator.push<String>(
+      final outcome = await Navigator.push<String>(
         context,
         MaterialPageRoute(
           fullscreenDialog: true,
@@ -1584,15 +1478,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
         ),
       );
 
-      if (!mounted ||
-          outcome == null ||
-          outcome.trim().isEmpty) {
+      if (!mounted || outcome == null || outcome.trim().isEmpty) {
         return;
       }
 
-      _showSnack(
-        outcome,
-      );
+      _showSnack(outcome);
     } catch (error) {
       _showError(error);
     } finally {
@@ -1607,139 +1497,137 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   // ===========================================================================
   // END CONSULTATION
   // ===========================================================================
-Future<void> _endSession() async {
-  if (!_isDoctor || _session?.isInProgress != true || _endingSession) {
-    return;
-  }
+  Future<void> _endSession() async {
+    if (!_isDoctor || _session?.isInProgress != true || _endingSession) {
+      return;
+    }
 
-  final confirmed = await showDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.black.withValues(alpha: 0.50),
-    builder: (dialogContext) {
-      return Dialog(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.50),
+      builder: (dialogContext) {
+        return Dialog(
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _DialogIcon(
+                  icon: Icons.stop_circle_outlined,
+                  backgroundColor: Color(0xFFFDF1F1),
+                  iconColor: Color(0xFFB42318),
+                ),
+
+                const SizedBox(height: 20),
+
+                Text(
+                  'End consultation?',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: -0.35,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // Single, tighter line — combines the "when" and the
+                // "what happens" messaging instead of two separate blocks.
+                Text(
+                  'This finalizes the appointment and settles the fee. '
+                  'You can\'t undo this.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    height: 1.5,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    style: FilledButton.styleFrom(
+                      elevation: 0,
+                      backgroundColor: const Color.fromARGB(255, 208, 54, 43),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                    ),
+                    child: Text(
+                      'End consultation',
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 42,
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    child: Text(
+                      'Continue consultation',
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const _DialogIcon(
-                icon: Icons.stop_circle_outlined,
-                backgroundColor: Color(0xFFFDF1F1),
-                iconColor: Color(0xFFB42318),
-              ),
+        );
+      },
+    );
 
-              const SizedBox(height: 20),
+    if (confirmed != true || !mounted) {
+      return;
+    }
 
-              Text(
-                'End consultation?',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: -0.35,
-                  color: AppColors.textPrimary,
-                ),
-              ),
+    setState(() => _endingSession = true);
 
-              const SizedBox(height: 8),
-
-              // Single, tighter line — combines the "when" and the
-              // "what happens" messaging instead of two separate blocks.
-              Text(
-                'This finalizes the appointment and settles the fee. '
-                'You can\'t undo this.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
-                  fontSize: 13,
-                  height: 1.5,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: FilledButton(
-                  onPressed: () => Navigator.pop(dialogContext, true),
-                  style: FilledButton.styleFrom(
-                    elevation: 0,
-                    backgroundColor: const Color.fromARGB(255, 208, 54, 43),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                  ),
-                  child: Text(
-                    'End consultation',
-                    style: GoogleFonts.outfit(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              SizedBox(
-                width: double.infinity,
-                height: 42,
-                child: TextButton(
-                  style: TextButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                  ),
-                  onPressed: () => Navigator.pop(dialogContext, false),
-                  child: Text(
-                    'Continue consultation',
-                    style: GoogleFonts.outfit(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-
-  if (confirmed != true || !mounted) {
-    return;
-  }
-
-  setState(() => _endingSession = true);
-
-  try {
-    await _repository.endConsultation(widget.bookingId);
-  } catch (error) {
-    _showError(error); 
-  } finally {
-    if (mounted) {
-      setState(() => _endingSession = false);
+    try {
+      await _repository.endConsultation(widget.bookingId);
+    } catch (error) {
+      _showError(error);
+    } finally {
+      if (mounted) {
+        setState(() => _endingSession = false);
+      }
     }
   }
-}
 
   Future<void> _endFollowUp() async {
-    if (!_isDoctor ||
-        _session?.isFollowUpOpen != true ||
-        _endingSession) {
+    if (!_isDoctor || _session?.isFollowUpOpen != true || _endingSession) {
       return;
     }
 
@@ -1863,28 +1751,22 @@ Future<void> _endSession() async {
   }
 
   Future<void> _handleConsultationCompleted() async {
-    if (_completionHandling ||
-        !mounted) {
+    if (_completionHandling || !mounted) {
       return;
     }
 
     _completionHandling = true;
 
     try {
-      final receipt =
-          await _repository
-              .getConsultationCompletion(
+      final receipt = await _repository.getConsultationCompletion(
         widget.bookingId,
       );
 
-      if (!mounted ||
-          !receipt.shouldShow) {
+      if (!mounted || !receipt.shouldShow) {
         return;
       }
 
-      await _showCompletionReceipt(
-        receipt,
-      );
+      await _showCompletionReceipt(receipt);
 
       if (!mounted) return;
 
@@ -1899,15 +1781,11 @@ Future<void> _endSession() async {
         }
       }
 
-      if (!receipt.isDoctor &&
-          !receipt.alreadyRated) {
+      if (!receipt.isDoctor && !receipt.alreadyRated) {
         await _showDoctorRating();
       }
 
-      await _repository
-          .acknowledgeConsultationCompletion(
-        widget.bookingId,
-      );
+      await _repository.acknowledgeConsultationCompletion(widget.bookingId);
 
       if (receipt.isDoctor && mounted) {
         await AuthNavigator.goToCorrectScreen(context);
@@ -2000,7 +1878,7 @@ Future<void> _endSession() async {
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            const AppIcon(
                               Icons.calendar_today_outlined,
                               size: 19,
                               color: AppColors.brand,
@@ -2018,7 +1896,7 @@ Future<void> _endSession() async {
                                 ),
                               ),
                             ),
-                            const Icon(
+                            const AppIcon(
                               Icons.chevron_right_rounded,
                               color: AppColors.textSecondary,
                             ),
@@ -2077,66 +1955,43 @@ Future<void> _endSession() async {
   // COMPLETION DIALOG
   // ===========================================================================
 
-  Future<void> _showCompletionReceipt(
-    ConsultationCompletionModel receipt,
-  ) {
-    final money =
-        NumberFormat('#,##0.00');
+  Future<void> _showCompletionReceipt(ConsultationCompletionModel receipt) {
+    final money = NumberFormat('#,##0.00');
 
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
-      barrierColor:
-          Colors.black.withValues(
-        alpha: 0.50,
-      ),
+      barrierColor: Colors.black.withValues(alpha: 0.50),
       builder: (dialogContext) {
         return Dialog(
           elevation: 0,
           backgroundColor: Colors.transparent,
-          insetPadding:
-              const EdgeInsets.symmetric(
-            horizontal: 24,
-          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
           child: Container(
             width: double.infinity,
-            padding:
-                const EdgeInsets.fromLTRB(
-              24,
-              28,
-              24,
-              22,
-            ),
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius:
-                  BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
-              mainAxisSize:
-                  MainAxisSize.min,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const _DialogIcon(
                   icon: Icons.check_rounded,
-                  backgroundColor:
-                      Color(0xFFEAF8EF),
-                  iconColor:
-                      Color(0xFF18A957),
+                  backgroundColor: Color(0xFFEAF8EF),
+                  iconColor: Color(0xFF18A957),
                 ),
 
                 const SizedBox(height: 20),
 
                 Text(
                   'Consultation completed',
-                  textAlign:
-                      TextAlign.center,
-                  style:
-                      GoogleFonts.outfit(
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
                     fontSize: 20,
-                    fontWeight:
-                        FontWeight.w500,
-                    color:
-                        AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
                     letterSpacing: -0.35,
                   ),
                 ),
@@ -2147,14 +2002,11 @@ Future<void> _endSession() async {
                   receipt.isDoctor
                       ? 'The appointment is complete and your earnings have been settled.'
                       : 'Your consultation is complete and the payment has been settled successfully.',
-                  textAlign:
-                      TextAlign.center,
-                  style:
-                      GoogleFonts.outfit(
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
                     fontSize: 12.5,
                     height: 1.5,
-                    color: AppColors
-                        .textSecondary,
+                    color: AppColors.textSecondary,
                   ),
                 ),
 
@@ -2162,43 +2014,22 @@ Future<void> _endSession() async {
 
                 Container(
                   width: double.infinity,
-                  padding:
-                      const EdgeInsets.all(
-                    16,
-                  ),
-                  decoration:
-                      BoxDecoration(
-                    color:
-                        const Color(
-                      0xFFF7F8FA,
-                    ),
-                    borderRadius:
-                        BorderRadius.circular(
-                      15,
-                    ),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF7F8FA),
+                    borderRadius: BorderRadius.circular(15),
                   ),
                   child: Column(
                     children: [
                       _ReceiptRow(
-                        label:
-                            'Consultation fee',
-                        value:
-                            'Rs. ${money.format(receipt.grossFee)}',
+                        label: 'Consultation fee',
+                        value: 'Rs. ${money.format(receipt.grossFee)}',
                       ),
 
                       if (receipt.isDoctor) ...[
                         const Padding(
-                          padding:
-                              EdgeInsets.symmetric(
-                            vertical: 12,
-                          ),
-                          child: Divider(
-                            height: 1,
-                            color:
-                                Color(
-                              0xFFE6E8EB,
-                            ),
-                          ),
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Divider(height: 1, color: Color(0xFFE6E8EB)),
                         ),
 
                         _ReceiptRow(
@@ -2208,15 +2039,11 @@ Future<void> _endSession() async {
                               '- Rs. ${money.format(receipt.commissionAmount)}',
                         ),
 
-                        const SizedBox(
-                          height: 12,
-                        ),
+                        const SizedBox(height: 12),
 
                         _ReceiptRow(
-                          label:
-                              'Your earnings',
-                          value:
-                              'Rs. ${money.format(receipt.doctorEarning)}',
+                          label: 'Your earnings',
+                          value: 'Rs. ${money.format(receipt.doctorEarning)}',
                           emphasized: true,
                         ),
                       ],
@@ -2231,32 +2058,21 @@ Future<void> _endSession() async {
                   height: 48,
                   child: FilledButton(
                     onPressed: () {
-                      Navigator.pop(
-                        dialogContext,
-                      );
+                      Navigator.pop(dialogContext);
                     },
-                    style:
-                        FilledButton.styleFrom(
+                    style: FilledButton.styleFrom(
                       elevation: 0,
-                      backgroundColor:
-                          AppColors.brand,
-                      foregroundColor:
-                          Colors.white,
-                      shape:
-                          RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(
-                          13,
-                        ),
+                      backgroundColor: AppColors.brand,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(13),
                       ),
                     ),
                     child: Text(
                       'Done',
-                      style:
-                          GoogleFonts.outfit(
+                      style: GoogleFonts.outfit(
                         fontSize: 14,
-                        fontWeight:
-                            FontWeight.w500,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
@@ -2276,61 +2092,36 @@ Future<void> _endSession() async {
   Future<void> _showDoctorRating() async {
     int rating = 0;
 
-    final reviewController =
-        TextEditingController();
+    final reviewController = TextEditingController();
 
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      barrierColor:
-          Colors.black.withValues(
-        alpha: 0.50,
-      ),
+      barrierColor: Colors.black.withValues(alpha: 0.50),
       builder: (dialogContext) {
         return StatefulBuilder(
-          builder: (
-            context,
-            setDialogState,
-          ) {
+          builder: (context, setDialogState) {
             return Dialog(
               elevation: 0,
-              backgroundColor:
-                  Colors.transparent,
-              insetPadding:
-                  const EdgeInsets.symmetric(
-                horizontal: 22,
-              ),
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 22),
               child: Container(
                 width: double.infinity,
-                padding:
-                    const EdgeInsets.fromLTRB(
-                  22,
-                  27,
-                  22,
-                  20,
-                ),
+                padding: const EdgeInsets.fromLTRB(22, 27, 22, 20),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius:
-                      BorderRadius.circular(
-                    24,
-                  ),
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: Column(
-                  mainAxisSize:
-                      MainAxisSize.min,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       'How was your consultation?',
-                      textAlign:
-                          TextAlign.center,
-                      style:
-                          GoogleFonts.outfit(
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.outfit(
                         fontSize: 19,
-                        fontWeight:
-                            FontWeight.w500,
-                        color: AppColors
-                            .textPrimary,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
                         letterSpacing: -0.3,
                       ),
                     ),
@@ -2339,108 +2130,69 @@ Future<void> _endSession() async {
 
                     Text(
                       'Your feedback helps other patients choose with confidence.',
-                      textAlign:
-                          TextAlign.center,
-                      style:
-                          GoogleFonts.outfit(
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.outfit(
                         fontSize: 12.2,
                         height: 1.45,
-                        color: AppColors
-                            .textSecondary,
+                        color: AppColors.textSecondary,
                       ),
                     ),
 
                     const SizedBox(height: 20),
 
                     Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.center,
-                      children: List.generate(
-                        5,
-                        (index) {
-                          final value =
-                              index + 1;
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        final value = index + 1;
 
-                          return GestureDetector(
-                            onTap: () {
-                              HapticFeedback
-                                  .selectionClick();
+                        return GestureDetector(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
 
-                              setDialogState(
-                                () {
-                                  rating = value;
-                                },
-                              );
-                            },
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets
-                                      .symmetric(
-                                horizontal: 4,
-                              ),
-                              child: Icon(
-                                value <= rating
-                                    ? Icons
-                                        .star_rounded
-                                    : Icons
-                                        .star_border_rounded,
-                                size: 36,
-                                color:
-                                    const Color(
-                                  0xFFFFB400,
-                                ),
-                              ),
+                            setDialogState(() {
+                              rating = value;
+                            });
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: AppIcon(
+                              value <= rating
+                                  ? Icons.star_rounded
+                                  : Icons.star_border_rounded,
+                              size: 36,
+                              color: const Color(0xFFFFB400),
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      }),
                     ),
 
                     const SizedBox(height: 20),
 
                     TextField(
-                      controller:
-                          reviewController,
+                      controller: reviewController,
                       minLines: 3,
                       maxLines: 5,
                       maxLength: 1000,
-                      textCapitalization:
-                          TextCapitalization
-                              .sentences,
-                      style:
-                          GoogleFonts.outfit(
+                      textCapitalization: TextCapitalization.sentences,
+                      style: GoogleFonts.outfit(
                         fontSize: 13,
-                        color: AppColors
-                            .textPrimary,
+                        color: AppColors.textPrimary,
                       ),
-                      decoration:
-                          InputDecoration(
+                      decoration: InputDecoration(
                         counterText: '',
                         hintText:
                             'Share a few words about your experience (optional)',
-                        hintStyle:
-                            GoogleFonts.outfit(
+                        hintStyle: GoogleFonts.outfit(
                           fontSize: 12,
-                          color: AppColors
-                              .textSecondary,
+                          color: AppColors.textSecondary,
                         ),
                         filled: true,
-                        fillColor:
-                            const Color(
-                          0xFFF7F8FA,
-                        ),
-                        contentPadding:
-                            const EdgeInsets.all(
-                          14,
-                        ),
-                        border:
-                            OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(
-                            14,
-                          ),
-                          borderSide:
-                              BorderSide.none,
+                        fillColor: const Color(0xFFF7F8FA),
+                        contentPadding: const EdgeInsets.all(14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
                         ),
                       ),
                     ),
@@ -2451,66 +2203,45 @@ Future<void> _endSession() async {
                       width: double.infinity,
                       height: 47,
                       child: FilledButton(
-                        onPressed:
-                            rating == 0
-                                ? null
-                                : () async {
-                                    try {
-                                      await _repository
-                                          .submitConsultationRating(
-                                        bookingId:
-                                            widget.bookingId,
-                                        rating:
-                                            rating,
-                                        review:
-                                            reviewController.text,
-                                      );
+                        onPressed: rating == 0
+                            ? null
+                            : () async {
+                                try {
+                                  await _repository.submitConsultationRating(
+                                    bookingId: widget.bookingId,
+                                    rating: rating,
+                                    review: reviewController.text,
+                                  );
 
-                                      if (dialogContext
-                                          .mounted) {
-                                        Navigator.pop(
-                                          dialogContext,
-                                        );
-                                      }
-                                    } catch (error) {
-                                      if (!dialogContext
-                                          .mounted) {
-                                        return;
-                                      }
+                                  if (dialogContext.mounted) {
+                                    Navigator.pop(dialogContext);
+                                  }
+                                } catch (error) {
+                                  if (!dialogContext.mounted) {
+                                    return;
+                                  }
 
-                                      ScaffoldMessenger.of(
-                                        dialogContext,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            _readableError(
-                                              error,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  },
-                        style:
-                            FilledButton.styleFrom(
+                                  ScaffoldMessenger.of(
+                                    dialogContext,
+                                  ).showSnackBar(
+                                    SnackBar(
+                                      content: Text(_readableError(error)),
+                                    ),
+                                  );
+                                }
+                              },
+                        style: FilledButton.styleFrom(
                           elevation: 0,
-                          backgroundColor:
-                              AppColors.brand,
-                          shape:
-                              RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(
-                              12,
-                            ),
+                          backgroundColor: AppColors.brand,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         child: Text(
                           'Submit review',
-                          style:
-                              GoogleFonts.outfit(
+                          style: GoogleFonts.outfit(
                             fontSize: 13.5,
-                            fontWeight:
-                                FontWeight.w500,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -2521,19 +2252,14 @@ Future<void> _endSession() async {
                       height: 41,
                       child: TextButton(
                         onPressed: () {
-                          Navigator.pop(
-                            dialogContext,
-                          );
+                          Navigator.pop(dialogContext);
                         },
                         child: Text(
                           'Skip for now',
-                          style:
-                              GoogleFonts.outfit(
+                          style: GoogleFonts.outfit(
                             fontSize: 12.5,
-                            fontWeight:
-                                FontWeight.w500,
-                            color: AppColors
-                                .textSecondary,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ),
@@ -2554,17 +2280,10 @@ Future<void> _endSession() async {
   // HELPERS
   // ===========================================================================
 
-  String _mimeForFileName(
-    String fileName,
-  ) {
-    final dot =
-        fileName.lastIndexOf('.');
+  String _mimeForFileName(String fileName) {
+    final dot = fileName.lastIndexOf('.');
 
-    final extension = dot < 0
-        ? ''
-        : fileName
-            .substring(dot + 1)
-            .toLowerCase();
+    final extension = dot < 0 ? '' : fileName.substring(dot + 1).toLowerCase();
 
     switch (extension) {
       case 'pdf':
@@ -2591,75 +2310,45 @@ Future<void> _endSession() async {
     }
   }
 
-  String _readableError(
-    Object error,
-  ) {
+  String _readableError(Object error) {
     return AppErrorMessage.from(error);
   }
 
-  void _showError(
-    Object error,
-  ) {
+  void _showError(Object error) {
     if (!mounted) return;
 
-    _showSnack(
-      _readableError(error),
-      isError: true,
-    );
+    _showSnack(_readableError(error), isError: true);
   }
 
-  void _showSnack(
-    String text, {
-    bool isError = false,
-  }) {
+  void _showSnack(String text, {bool isError = false}) {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          behavior:
-              SnackBarBehavior.floating,
+          behavior: SnackBarBehavior.floating,
           elevation: 0,
           backgroundColor: isError
-              ? const Color(
-                  0xFF3C2020,
-                )
-              : const Color(
-                  0xFF22252A,
-                ),
-          margin:
-              const EdgeInsets.all(
-            16,
-          ),
+              ? const Color(0xFF3C2020)
+              : const Color(0xFF22252A),
+          margin: const EdgeInsets.all(16),
           shape: RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.circular(
-              12,
-            ),
+            borderRadius: BorderRadius.circular(12),
           ),
           content: Text(
             text,
-            style:
-                GoogleFonts.outfit(
-              fontSize: 13,
-              color: Colors.white,
-            ),
+            style: GoogleFonts.outfit(fontSize: 13, color: Colors.white),
           ),
         ),
       );
   }
 
-  bool _sameDay(
-    DateTime first,
-    DateTime second,
-  ) {
+  bool _sameDay(DateTime first, DateTime second) {
     final a = first.toLocal();
     final b = second.toLocal();
 
-    return a.year == b.year &&
-        a.month == b.month &&
-        a.day == b.day;
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   // ===========================================================================
@@ -2673,320 +2362,234 @@ Future<void> _endSession() async {
         _session?.isFollowUpOpen == true;
     return Scaffold(
       // WhatsApp-like warm neutral conversation surface.
-      backgroundColor:
-          const Color(0xFFF0EEEA),
+      backgroundColor: const Color(0xFFF0EEEA),
 
       appBar: _buildAppBar(),
 
       body: _loading
           ? const _LoadingView()
           : _error != null
-              ? _ErrorView(
-                  message: _error!,
-                  retry: () {
-                    setState(() {
-                      _loading = true;
-                      _error = null;
-                    });
+          ? _ErrorView(
+              message: _error!,
+              retry: () {
+                setState(() {
+                  _loading = true;
+                  _error = null;
+                });
 
-                    _initialize();
-                  },
-                )
-              : Column(
-                  children: [
-                    // ---------------------------------------------------------
-                    // PATIENT APPOINTMENT STATUS
-                    // ---------------------------------------------------------
+                _initialize();
+              },
+            )
+          : Column(
+              children: [
+                // ---------------------------------------------------------
+                // PATIENT APPOINTMENT STATUS
+                // ---------------------------------------------------------
+                if (!_isDoctor &&
+                    _session != null &&
+                    _session?.isFollowUpOpen != true)
+                  _PatientAppointmentStatusBar(
+                    session: _session!,
+                    doctorName: widget.peerName,
+                    cancelling: _cancellingAppointment,
+                    onCancel: _cancelAcceptedAppointment,
+                  ),
 
-                    if (!_isDoctor &&
-                        _session != null &&
-                        _session?.isFollowUpOpen != true)
-                      _PatientAppointmentStatusBar(
-                        session: _session!,
-                        doctorName: widget.peerName,
-                        cancelling: _cancellingAppointment,
-                        onCancel: _cancelAcceptedAppointment,
-                      ),
+                // ---------------------------------------------------------
+                // WAITING TO START
+                // ---------------------------------------------------------
+                if (_isDoctor &&
+                    _session?.bookingStatus == 'accepted' &&
+                    _session?.isInProgress != true)
+                  _SessionRequestBar(
+                    pending: _session?.isRequestPending == true,
+                    busy: _sessionActionBusy,
+                    onRequest: _requestSessionStart,
+                  ),
 
-                    // ---------------------------------------------------------
-                    // WAITING TO START
-                    // ---------------------------------------------------------
+                // ---------------------------------------------------------
+                // ACTIVE CONSULTATION
+                // ---------------------------------------------------------
+                if (_isDoctor && _session?.isInProgress == true)
+                  _ActiveConsultationBar(
+                    ending: _endingSession,
+                    onEnd: _endSession,
+                    label: 'End consultation',
+                    endingLabel: 'Ending consultation…',
+                  ),
 
-                    if (_isDoctor &&
-                        _session?.bookingStatus ==
-                            'accepted' &&
-                        _session?.isInProgress !=
-                            true)
-                      _SessionRequestBar(
-                        pending: _session
-                                ?.isRequestPending ==
-                            true,
-                        busy:
-                            _sessionActionBusy,
-                        onRequest:
-                            _requestSessionStart,
-                      ),
+                if (_isDoctor && _session?.isFollowUpOpen == true)
+                  _ActiveConsultationBar(
+                    ending: _endingSession,
+                    onEnd: _endFollowUp,
+                    label: 'End follow-up',
+                    endingLabel: 'Ending follow-up…',
+                  ),
 
-                    // ---------------------------------------------------------
-                    // ACTIVE CONSULTATION
-                    // ---------------------------------------------------------
-
-                    if (_isDoctor &&
-                        _session?.isInProgress ==
-                            true)
-                      _ActiveConsultationBar(
-                        ending:
-                            _endingSession,
-                        onEnd:
-                            _endSession,
-                        label: 'End consultation',
-                        endingLabel: 'Ending consultation…',
-                      ),
-
-                    if (_isDoctor &&
-                        _session?.isFollowUpOpen == true)
-                      _ActiveConsultationBar(
-                        ending: _endingSession,
-                        onEnd: _endFollowUp,
-                        label: 'End follow-up',
-                        endingLabel: 'Ending follow-up…',
-                      ),
-
-                    // ---------------------------------------------------------
-                    // MESSAGE AREA
-                    // ---------------------------------------------------------
-
-                    Expanded(
-                      child: _messages.isEmpty
-                          ? _EmptyChat(
-                              peerName:
-                                  widget.peerName,
-                            )
-                          : ListView.builder(
-                              controller:
-                                  _scrollController,
-                              keyboardDismissBehavior:
-                                  ScrollViewKeyboardDismissBehavior
-                                      .onDrag,
-                              padding:
-                                  const EdgeInsets
-                                      .fromLTRB(
-                                8,
-                                8,
-                                8,
-                                16,
-                              ),
-                              itemCount:
-                                  _messages.length +
-                                      (_loadingOlder
-                                          ? 1
-                                          : 0),
-                              itemBuilder: (
-                                context,
-                                index,
-                              ) {
-                                if (_loadingOlder &&
-                                    index == 0) {
-                                  return const Padding(
-                                    padding:
-                                        EdgeInsets.symmetric(
-                                      vertical: 12,
+                // ---------------------------------------------------------
+                // MESSAGE AREA
+                // ---------------------------------------------------------
+                Expanded(
+                  child: _messages.isEmpty
+                      ? _EmptyChat(
+                          peerName: widget.peerName,
+                          connected:
+                              !_isDoctor &&
+                              _session?.bookingStatus == 'accepted',
+                        )
+                      : ListView.builder(
+                          controller: _scrollController,
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+                          itemCount: _messages.length + (_loadingOlder ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (_loadingOlder && index == 0) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
                                     ),
-                                    child: Center(
-                                      child: SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child:
-                                            CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }
-
-                                final offset =
-                                    _loadingOlder
-                                        ? 1
-                                        : 0;
-
-                                final messageIndex =
-                                    index - offset;
-
-                                var message =
-                                    _messages[
-                                        messageIndex];
-
-                                // ---------------------------------------------
-                                // RESOLVE REPLY
-                                // ---------------------------------------------
-
-                                if (message
-                                        .replyToMessageId !=
-                                    null) {
-                                  final matches =
-                                      _messages.where(
-                                    (item) =>
-                                        item.id ==
-                                        message
-                                            .replyToMessageId,
-                                  );
-
-                                  if (matches
-                                      .isNotEmpty) {
-                                    message =
-                                        message.copyWith(
-                                      replyTo:
-                                          matches.first,
-                                    );
-                                  }
-                                }
-
-                                final mine =
-                                    message.senderId ==
-                                        _repository
-                                            .currentUserId;
-
-                                final showDate =
-                                    messageIndex == 0 ||
-                                        !_sameDay(
-                                          _messages[
-                                                  messageIndex -
-                                                      1]
-                                              .createdAt,
-                                          message
-                                              .createdAt,
-                                        );
-
-                                return KeyedSubtree(
-                                  key: _messageKeys.putIfAbsent(
-                                    message.id,
-                                    () => GlobalKey(),
                                   ),
-                                  child: Column(
-                                    children: [
-                                    if (showDate)
-                                      _DateDivider(
-                                        date: message
-                                            .createdAt,
-                                      ),
+                                ),
+                              );
+                            }
 
-                                    if (message.type ==
-                                        MessageType
-                                            .system)
-                                      _SystemMessage(
-                                        message:
-                                            message,
-                                      )
-                                    else
-                                      _MessageBubble(
-                                        message:
-                                            message,
-                                        highlighted:
-                                            _highlightedMessageId == message.id,
-                                        mine:
-                                            mine,
-                                        repository:
-                                            _repository,
-                                        onReply: () {
-                                          setState(
-                                            () {
-                                              _replyingTo =
-                                                  message;
-                                            },
-                                          );
-                                        },
-                                        onReplyTap: message.replyToMessageId == null
-                                            ? null
-                                            : () => _goToRepliedMessage(
-                                                  message.replyToMessageId!,
-                                                ),
-                                        onRetry: mine &&
-                                                message.status ==
-                                                    MessageStatus.failed
-                                            ? () => _retryMessage(message)
-                                            : null,
-                                        onDelete:
-                                            mine &&
-                                                    !message
-                                                        .isDeleted
-                                                ? () {
-                                                    if (message.status ==
-                                                        MessageStatus.failed) {
-                                                      setState(() {
-                                                        _messages.removeWhere(
-                                                          (item) =>
-                                                              item.id == message.id,
-                                                        );
-                                                      });
-                                                    } else {
-                                                      _delete(message);
-                                                    }
-                                                  }
-                                                : null,
-                                      ),
-                                    ],
-                                  ),
+                            final offset = _loadingOlder ? 1 : 0;
+
+                            final messageIndex = index - offset;
+
+                            var message = _messages[messageIndex];
+
+                            // ---------------------------------------------
+                            // RESOLVE REPLY
+                            // ---------------------------------------------
+
+                            if (message.replyToMessageId != null) {
+                              final matches = _messages.where(
+                                (item) => item.id == message.replyToMessageId,
+                              );
+
+                              if (matches.isNotEmpty) {
+                                message = message.copyWith(
+                                  replyTo: matches.first,
                                 );
-                              },
-                            ),
-                    ),
+                              }
+                            }
 
-                    // ---------------------------------------------------------
-                    // INPUT
-                    // ---------------------------------------------------------
+                            final mine =
+                                message.senderId == _repository.currentUserId;
 
-                    if (canCompose && !_preSessionLimitReached)
-                      _Composer(
-                        controller:
-                            _textController,
-                        reply:
-                            _replyingTo,
-                        sending:
-                            _sending,
-                        recording:
-                            _recording,
-                        recordingPaused:
-                            _recordingPaused,
-                        recordingElapsed:
-                            _recordingElapsed,
-                        waveform: _recordingWaveform,
-                        onChanged: _onComposerChanged,
-                        onCancelReply: () {
-                          setState(() {
-                            _replyingTo =
-                                null;
-                          });
-                        },
-                        onAttach:
-                            _showAttachments,
-                        onRecordStart:
-                            _startRecording,
-                        onRecordSend: () =>
-                            _finishRecording(send: true),
-                        onRecordCancel: () =>
-                            _finishRecording(send: false),
-                        onRecordTogglePause:
-                            _togglePauseRecording,
-                        onSend:
-                            _sendText,
-                      )
-                    else if (_preSessionLimitReached)
-                      _MessageLimitNotice(
+                            final showDate =
+                                messageIndex == 0 ||
+                                !_sameDay(
+                                  _messages[messageIndex - 1].createdAt,
+                                  message.createdAt,
+                                );
 
-                        isDoctor: _isDoctor,
-  pending: _session?.isRequestPending == true,
-  busy: _sessionActionBusy,
-  onStart: _requestSessionStart,
-                      )
-                    else
-                      _ClosedNotice(
-                        message: _session?.isFollowUpUpcoming == true
-                            ? 'Follow-up chat unlocks on ${DateFormat('d MMMM yyyy').format(_session!.followUpDate!)}.'
-                            : null,
-                      ),
-                  ],
+                            return KeyedSubtree(
+                              key: _messageKeys.putIfAbsent(
+                                message.id,
+                                () => GlobalKey(),
+                              ),
+                              child: Column(
+                                children: [
+                                  if (showDate)
+                                    _DateDivider(date: message.createdAt),
+
+                                  if (message.type == MessageType.system)
+                                    _SystemMessage(message: message)
+                                  else
+                                    _MessageBubble(
+                                      message: message,
+                                      highlighted:
+                                          _highlightedMessageId == message.id,
+                                      mine: mine,
+                                      repository: _repository,
+                                      onReply: () {
+                                        setState(() {
+                                          _replyingTo = message;
+                                        });
+                                      },
+                                      onReplyTap:
+                                          message.replyToMessageId == null
+                                          ? null
+                                          : () => _goToRepliedMessage(
+                                              message.replyToMessageId!,
+                                            ),
+                                      onRetry:
+                                          mine &&
+                                              message.status ==
+                                                  MessageStatus.failed
+                                          ? () => _retryMessage(message)
+                                          : null,
+                                      onDelete: mine && !message.isDeleted
+                                          ? () {
+                                              if (message.status ==
+                                                  MessageStatus.failed) {
+                                                setState(() {
+                                                  _messages.removeWhere(
+                                                    (item) =>
+                                                        item.id == message.id,
+                                                  );
+                                                });
+                                              } else {
+                                                _delete(message);
+                                              }
+                                            }
+                                          : null,
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
                 ),
+
+                // ---------------------------------------------------------
+                // INPUT
+                // ---------------------------------------------------------
+                if (canCompose && !_preSessionLimitReached)
+                  _Composer(
+                    controller: _textController,
+                    reply: _replyingTo,
+                    sending: _sending,
+                    recording: _recording,
+                    recordingPaused: _recordingPaused,
+                    recordingElapsed: _recordingElapsed,
+                    waveform: _recordingWaveform,
+                    onChanged: _onComposerChanged,
+                    onCancelReply: () {
+                      setState(() {
+                        _replyingTo = null;
+                      });
+                    },
+                    onAttach: _showAttachments,
+                    onRecordStart: _startRecording,
+                    onRecordSend: () => _finishRecording(send: true),
+                    onRecordCancel: () => _finishRecording(send: false),
+                    onRecordTogglePause: _togglePauseRecording,
+                    onSend: _sendText,
+                  )
+                else if (_preSessionLimitReached)
+                  _MessageLimitNotice(
+                    isDoctor: _isDoctor,
+                    pending: _session?.isRequestPending == true,
+                    busy: _sessionActionBusy,
+                    onStart: _requestSessionStart,
+                  )
+                else
+                  _ClosedNotice(
+                    message: _session?.isFollowUpUpcoming == true
+                        ? 'Follow-up chat unlocks on ${DateFormat('d MMMM yyyy').format(_session!.followUpDate!)}.'
+                        : null,
+                  ),
+              ],
+            ),
     );
   }
 
@@ -2997,6 +2600,8 @@ Future<void> _endSession() async {
   PreferredSizeWidget _buildAppBar() {
     final inProgress = _session?.isInProgress == true;
     final canCall = inProgress || _session?.isFollowUpOpen == true;
+    final showLockedCall =
+        !_isDoctor && _session?.bookingStatus == 'accepted' && !canCall;
     final hasActiveCall =
         widget.onReturnToCall != null && _session?.callEndedAt == null;
 
@@ -3004,11 +2609,9 @@ Future<void> _endSession() async {
       elevation: 0,
       scrolledUnderElevation: 0,
 
-      backgroundColor:
-          Colors.white,
+      backgroundColor: Colors.white,
 
-      surfaceTintColor:
-          Colors.transparent,
+      surfaceTintColor: Colors.transparent,
 
       toolbarHeight: 70,
 
@@ -3021,12 +2624,8 @@ Future<void> _endSession() async {
           Navigator.pop(context);
         },
         splashRadius: 21,
-        icon: const Icon(
-          Icons.arrow_back_rounded,
-          size: 23,
-        ),
-        color:
-            AppColors.textPrimary,
+        icon: const AppIcon(Icons.arrow_back_rounded, size: 23),
+        color: AppColors.textPrimary,
       ),
 
       title: Row(
@@ -3034,220 +2633,157 @@ Future<void> _endSession() async {
           // -------------------------------------------------------------------
           // DOCTOR IMAGE + ACTIVE DOT
           // -------------------------------------------------------------------
-
           GestureDetector(
             onTap: widget.onPeerTap,
             behavior: HitTestBehavior.opaque,
             child: Stack(
-            clipBehavior:
-                Clip.none,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration:
-                    BoxDecoration(
-                  color:
-                      const Color(
-                    0xFFF1F3F5,
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F3F5),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFE5E8EC)),
                   ),
-                  shape:
-                      BoxShape.circle,
-                  border:
-                      Border.all(
-                    color:
-                        const Color(
-                      0xFFE5E8EC,
-                    ),
-                  ),
-                ),
-                clipBehavior:
-                    Clip.antiAlias,
-                child: widget
-                            .peerAvatarUrl
-                            ?.trim()
-                            .isNotEmpty ==
-                        true
-                    ? Image.network(
-                        widget
-                            .peerAvatarUrl!,
-                        fit:
-                            BoxFit.cover,
-                        errorBuilder:
-                            (_, _, _) {
-                          return Icon(
-                            Icons
-                                .person_rounded,
-                            size: 23,
-                            color: AppColors
-                                .brand,
-                          );
-                        },
-                      )
-                    : Icon(
-                        Icons
-                            .person_rounded,
-                        size: 23,
-                        color:
-                            AppColors.brand,
-                      ),
-              ),
-
-              if (!_isDoctor && inProgress)
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 13,
-                    height: 13,
-                    padding:
-                        const EdgeInsets
-                            .all(
-                      2,
-                    ),
-                    decoration:
-                        const BoxDecoration(
-                      color:
-                          Colors.white,
-                      shape:
-                          BoxShape.circle,
-                    ),
-                    child:
-                        Container(
-                      decoration:
-                          const BoxDecoration(
-                        color:
-                            Color(
-                          0xFF18A957,
+                  clipBehavior: Clip.antiAlias,
+                  child: widget.peerAvatarUrl?.trim().isNotEmpty == true
+                      ? Image.network(
+                          widget.peerAvatarUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) {
+                            return AppIcon(
+                              Icons.person_rounded,
+                              size: 23,
+                              color: AppColors.brand,
+                            );
+                          },
+                        )
+                      : AppIcon(
+                          Icons.person_rounded,
+                          size: 23,
+                          color: AppColors.brand,
                         ),
-                        shape:
-                            BoxShape.circle,
+                ),
+
+                if (!_isDoctor && inProgress)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 13,
+                      height: 13,
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF18A957),
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
                   ),
-                ),
-            ],
-          ),
+              ],
+            ),
           ),
 
-          const SizedBox(
-            width: 11,
-          ),
+          const SizedBox(width: 11),
 
           // -------------------------------------------------------------------
           // DOCTOR NAME + VERIFIED
           // -------------------------------------------------------------------
-
           Expanded(
             child: GestureDetector(
               onTap: widget.onPeerTap,
               behavior: HitTestBehavior.opaque,
               child: Column(
-              mainAxisSize:
-                  MainAxisSize.min,
-              crossAxisAlignment:
-                  CrossAxisAlignment
-                      .start,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        widget.peerName,
-                        maxLines: 1,
-                        overflow:
-                            TextOverflow
-                                .ellipsis,
-                        style:
-                            GoogleFonts
-                                .outfit(
-                          fontSize: 16,
-                          height: 1.12,
-                          fontWeight:
-                              FontWeight
-                                  .w500,
-                          color: AppColors
-                              .textPrimary,
-                          letterSpacing:
-                              -0.2,
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          widget.peerName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(
+                            fontSize: 16,
+                            height: 1.12,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textPrimary,
+                            letterSpacing: -0.2,
+                          ),
                         ),
                       ),
-                    ),
 
-                    if (widget
-                        .peerVerified) ...[
-                      const SizedBox(
-                        width: 5,
-                      ),
+                      if (widget.peerVerified) ...[
+                        const SizedBox(width: 5),
 
-                      Icon(
-                        Icons
-                            .verified_rounded,
-                        size: 17,
-                        color:
-                            AppColors.brand,
-                      ),
+                        AppIcon(
+                          Icons.verified_rounded,
+                          size: 17,
+                          color: AppColors.brand,
+                        ),
+                      ],
+
+                      if (_isDoctor && _peerOnline) ...[
+                        const SizedBox(width: 7),
+                        Semantics(
+                          label: 'Patient is online',
+                          child: Container(
+                            width: 9,
+                            height: 9,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF18A957),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
+                  ),
 
-                    if (_isDoctor && _peerOnline) ...[
-                      const SizedBox(width: 7),
-                      Semantics(
-                        label: 'Patient is online',
-                        child: Container(
-                          width: 9,
-                          height: 9,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF18A957),
-                            shape: BoxShape.circle,
+                  const SizedBox(height: 4),
+
+                  Row(
+                    children: [
+                      Flexible(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 160),
+                          child: Text(
+                            _peerRecording
+                                ? 'recording audio…'
+                                : (_peerTyping
+                                      ? 'typing…'
+                                      : widget.peerSubtitle),
+                            key: ValueKey(
+                              _peerRecording
+                                  ? 'recording'
+                                  : (_peerTyping ? 'typing' : 'subtitle'),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.outfit(
+                              fontSize: 10.8,
+                              height: 1.15,
+                              fontWeight: FontWeight.w400,
+                              color: _peerTyping || _peerRecording
+                                  ? AppColors.brand
+                                  : AppColors.textSecondary,
+                            ),
                           ),
                         ),
                       ),
                     ],
-                  ],
-                ),
-
-                const SizedBox(
-                  height: 4,
-                ),
-
-                Row(
-                  children: [
-                    Flexible(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 160),
-                        child: Text(
-                        _peerRecording
-                            ? 'recording audio…'
-                            : (_peerTyping ? 'typing…' : widget.peerSubtitle),
-                        key: ValueKey(
-                          _peerRecording
-                              ? 'recording'
-                              : (_peerTyping ? 'typing' : 'subtitle'),
-                        ),
-                        maxLines: 1,
-                        overflow:
-                            TextOverflow
-                                .ellipsis,
-                        style:
-                            GoogleFonts
-                                .outfit(
-                          fontSize: 10.8,
-                          height: 1.15,
-                          fontWeight:
-                              FontWeight
-                                  .w400,
-                          color: _peerTyping || _peerRecording
-                              ? AppColors.brand
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
-          ),
           ),
         ],
       ),
@@ -3255,7 +2791,6 @@ Future<void> _endSession() async {
       // -----------------------------------------------------------------------
       // VIDEO CALL
       // -----------------------------------------------------------------------
-
       actions: [
         if (hasActiveCall)
           Padding(
@@ -3263,7 +2798,7 @@ Future<void> _endSession() async {
             child: Center(
               child: FilledButton.icon(
                 onPressed: widget.onReturnToCall,
-                icon: const Icon(Icons.videocam_rounded, size: 17),
+                icon: const AppIcon(Icons.videocam_rounded, size: 17),
                 label: const Text('Call active'),
                 style: FilledButton.styleFrom(
                   elevation: 0,
@@ -3278,49 +2813,58 @@ Future<void> _endSession() async {
               ),
             ),
           )
-        else if (canCall)
+        else if (canCall || showLockedCall)
           Padding(
-            padding:
-                const EdgeInsets.only(
-              right: 12,
-            ),
+            padding: const EdgeInsets.only(right: 12),
             child: Material(
-              color: AppColors.brand
-                  .withValues(
-                alpha: 0.075,
-              ),
-              shape:
-                  const CircleBorder(),
+              color: (canCall ? AppColors.brand : AppColors.textSecondary)
+                  .withValues(alpha: 0.075),
+              shape: const CircleBorder(),
               child: InkWell(
-                customBorder:
-                    const CircleBorder(),
-                onTap: _callStarting
-                    ? null
-                    : _startVideoCall,
+                customBorder: const CircleBorder(),
+                onTap: !canCall
+                    ? () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Video call unlocks when the doctor starts the consultation.',
+                            ),
+                          ),
+                        );
+                      }
+                    : (_callStarting ? null : _startVideoCall),
                 child: SizedBox(
                   width: 43,
                   height: 43,
                   child: _callStarting
                       ? Padding(
-                          padding:
-                              const EdgeInsets
-                                  .all(
-                            12,
-                          ),
-                          child:
-                              CircularProgressIndicator(
-                            strokeWidth:
-                                2,
-                            color: AppColors
-                                .brand,
+                          padding: const EdgeInsets.all(12),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.brand,
                           ),
                         )
-                      : Icon(
-                          Icons
-                              .videocam_rounded,
-                          size: 21,
-                          color: AppColors
-                              .brand,
+                      : Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            AppIcon(
+                              Icons.videocam_rounded,
+                              size: 21,
+                              color: canCall
+                                  ? AppColors.brand
+                                  : AppColors.textSecondary,
+                            ),
+                            if (showLockedCall)
+                              Positioned(
+                                right: 9,
+                                bottom: 9,
+                                child: AppIcon(
+                                  Icons.lock_rounded,
+                                  size: 10,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                          ],
                         ),
                 ),
               ),
@@ -3328,16 +2872,9 @@ Future<void> _endSession() async {
           ),
       ],
 
-      bottom:
-          const PreferredSize(
-        preferredSize:
-            Size.fromHeight(1),
-        child: Divider(
-          height: 1,
-          thickness: 1,
-          color:
-              Color(0xFFE9ECF0),
-        ),
+      bottom: const PreferredSize(
+        preferredSize: Size.fromHeight(1),
+        child: Divider(height: 1, thickness: 1, color: Color(0xFFE9ECF0)),
       ),
     );
   }
@@ -3354,8 +2891,7 @@ Future<void> _endSession() async {
     _peerTypingExpiryTimer?.cancel();
     unawaited(_closeTypingChannel());
     PushNotificationService.instance.markChatClosed(widget.bookingId);
-    WidgetsBinding.instance
-        .removeObserver(this);
+    WidgetsBinding.instance.removeObserver(this);
 
     _subscription?.cancel();
     _sessionSubscription?.cancel();
@@ -3392,33 +2928,17 @@ class _DialogIcon extends StatelessWidget {
     return Container(
       width: 74,
       height: 74,
-      decoration:
-          BoxDecoration(
-        color:
-            backgroundColor,
-        shape:
-            BoxShape.circle,
-      ),
-      alignment:
-          Alignment.center,
+      decoration: BoxDecoration(color: backgroundColor, shape: BoxShape.circle),
+      alignment: Alignment.center,
       child: Container(
         width: 44,
         height: 44,
-        decoration:
-            const BoxDecoration(
-          color:
-              Colors.white,
-          shape:
-              BoxShape.circle,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
         ),
-        alignment:
-            Alignment.center,
-        child: Icon(
-          icon,
-          size: 23,
-          color:
-              iconColor,
-        ),
+        alignment: Alignment.center,
+        child: AppIcon(icon, size: 23, color: iconColor),
       ),
     );
   }
@@ -3429,111 +2949,60 @@ class _DialogIcon extends StatelessWidget {
 // =============================================================================
 
 class _DateDivider extends StatelessWidget {
-  const _DateDivider({
-    required this.date,
-  });
+  const _DateDivider({required this.date});
 
   final DateTime date;
 
   String get _text {
-    final value =
-        date.toLocal();
+    final value = date.toLocal();
 
-    final now =
-        DateTime.now();
+    final now = DateTime.now();
 
-    final today =
-        DateTime(
-      now.year,
-      now.month,
-      now.day,
-    );
+    final today = DateTime(now.year, now.month, now.day);
 
-    final messageDay =
-        DateTime(
-      value.year,
-      value.month,
-      value.day,
-    );
+    final messageDay = DateTime(value.year, value.month, value.day);
 
-    final difference =
-        today.difference(
-      messageDay,
-    );
+    final difference = today.difference(messageDay);
 
-    if (difference.inDays ==
-        0) {
+    if (difference.inDays == 0) {
       return 'Today';
     }
 
-    if (difference.inDays ==
-        1) {
+    if (difference.inDays == 1) {
       return 'Yesterday';
     }
 
-    if (value.year ==
-        now.year) {
-      return DateFormat(
-        'MMM d',
-      ).format(value);
+    if (value.year == now.year) {
+      return DateFormat('MMM d').format(value);
     }
 
-    return DateFormat(
-      'MMM d, yyyy',
-    ).format(value);
+    return DateFormat('MMM d, yyyy').format(value);
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding:
-          const EdgeInsets.symmetric(
-        vertical: 9,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 9),
       child: Center(
         child: Container(
-          padding:
-              const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 5,
-          ),
-          decoration:
-              BoxDecoration(
-            color:
-                Colors.white
-                    .withValues(
-              alpha: 0.92,
-            ),
-            borderRadius:
-                BorderRadius.circular(
-              8,
-            ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.92),
+            borderRadius: BorderRadius.circular(8),
             boxShadow: [
               BoxShadow(
-                color: Colors.black
-                    .withValues(
-                  alpha: 0.025,
-                ),
+                color: Colors.black.withValues(alpha: 0.025),
                 blurRadius: 2,
-                offset:
-                    const Offset(
-                  0,
-                  1,
-                ),
+                offset: const Offset(0, 1),
               ),
             ],
           ),
           child: Text(
             _text,
-            style:
-                GoogleFonts.outfit(
+            style: GoogleFonts.outfit(
               fontSize: 10,
-              fontWeight:
-                  FontWeight.w500,
-              color:
-                  const Color(
-                0xFF6C727B,
-              ),
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF6C727B),
             ),
           ),
         ),
@@ -3547,9 +3016,7 @@ class _DateDivider extends StatelessWidget {
 // =============================================================================
 
 class _SystemMessage extends StatelessWidget {
-  const _SystemMessage({
-    required this.message,
-  });
+  const _SystemMessage({required this.message});
 
   final ChatMessageModel message;
 
@@ -3557,41 +3024,20 @@ class _SystemMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        constraints:
-            const BoxConstraints(
-          maxWidth: 280,
-        ),
-        margin:
-            const EdgeInsets.only(
-          bottom: 8,
-        ),
-        padding:
-            const EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: 6,
-        ),
-        decoration:
-            BoxDecoration(
-          color:
-              Colors.white.withValues(
-            alpha: 0.90,
-          ),
-          borderRadius:
-              BorderRadius.circular(
-            8,
-          ),
+        constraints: const BoxConstraints(maxWidth: 280),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.90),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
-          message.text ??
-              'Consultation update',
-          textAlign:
-              TextAlign.center,
-          style:
-              GoogleFonts.outfit(
+          message.text ?? 'Consultation update',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.outfit(
             fontSize: 10.4,
             height: 1.35,
-            color:
-                AppColors.textSecondary,
+            color: AppColors.textSecondary,
           ),
         ),
       ),
@@ -3625,13 +3071,10 @@ class _MessageBubble extends StatelessWidget {
   final bool highlighted;
 
   bool get _isImage =>
-      message.type == MessageType.image &&
-      message.mediaUrl != null;
+      message.type == MessageType.image && message.mediaUrl != null;
 
   bool get _isDocument =>
-      message.type == MessageType.file &&
-      message.mediaUrl != null &&
-      !_isVideo;
+      message.type == MessageType.file && message.mediaUrl != null && !_isVideo;
 
   bool get _isVideo =>
       message.type == MessageType.file &&
@@ -3639,13 +3082,11 @@ class _MessageBubble extends StatelessWidget {
       (message.mimeType?.toLowerCase().startsWith('video/') == true);
 
   bool get _isVoice =>
-      message.type == MessageType.voice &&
-      message.mediaUrl != null;
+      message.type == MessageType.voice && message.mediaUrl != null;
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth =
-        MediaQuery.sizeOf(context).width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
@@ -3658,185 +3099,147 @@ class _MessageBubble extends StatelessWidget {
         swipeLeft: mine,
         onReply: onReply,
         child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onLongPress: onDelete == null
-            ? null
-            : () {
-                _showMessageActions(context);
-              },
-        child: Align(
-        alignment: mine
-            ? Alignment.centerRight
-            : Alignment.centerLeft,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: screenWidth * 0.80,
-          ),
-          child: Container(
-            margin: EdgeInsets.only(
-              left: mine ? 48 : 0,
-              right: mine ? 0 : 48,
-              bottom: 5,
-            ),
-
-            padding: _isImage
-                ? const EdgeInsets.all(4)
-                : _isDocument
-                    ? const EdgeInsets.fromLTRB(
-                        6,
-                        6,
-                        6,
-                        5,
-                      )
-                    : const EdgeInsets.fromLTRB(
-                        10,
-                        7,
-                        9,
-                        6,
-                      ),
-
-            decoration: BoxDecoration(
-              color: mine
-                  ?  AppColors.brand
-                  : Colors.white,
-
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(
-                  mine ? 17 : 5,
+          behavior: HitTestBehavior.translucent,
+          onLongPress: onDelete == null
+              ? null
+              : () {
+                  _showMessageActions(context);
+                },
+          child: Align(
+            alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: screenWidth * 0.80),
+              child: Container(
+                margin: EdgeInsets.only(
+                  left: mine ? 48 : 0,
+                  right: mine ? 0 : 48,
+                  bottom: 5,
                 ),
-                topRight: Radius.circular(
-                  mine ? 5 : 17,
-                ),
-                bottomLeft:
-                    const Radius.circular(17),
-                bottomRight:
-                    const Radius.circular(17),
-              ),
 
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(
-                    alpha: 0.04,
+                padding: _isImage
+                    ? const EdgeInsets.all(4)
+                    : _isDocument
+                    ? const EdgeInsets.fromLTRB(6, 6, 6, 5)
+                    : const EdgeInsets.fromLTRB(10, 7, 9, 6),
+
+                decoration: BoxDecoration(
+                  color: mine ? AppColors.brand : Colors.white,
+
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(mine ? 17 : 5),
+                    topRight: Radius.circular(mine ? 5 : 17),
+                    bottomLeft: const Radius.circular(17),
+                    bottomRight: const Radius.circular(17),
                   ),
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
+
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 3,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
                 ),
-              ],
-            ),
 
-            child: message.isDeleted
-                ?  _DeletedMessage( mine: mine,)
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                    children: [
-                      // -------------------------------------------------------
-                      // REPLY
-                      // -------------------------------------------------------
-
-                      if (message.replyToMessageId != null) ...[
-                        _ReplyBubble(
-                          message: message.replyTo,
-                          mine: mine,
-                          onTap: onReplyTap,
-                        ),
-
-                        const SizedBox(height: 5),
-                      ],
-
-                      // -------------------------------------------------------
-                      // IMAGE
-                      // -------------------------------------------------------
-
-                      if (_isImage)
-                        _ImageMessage(
-                          message: message,
-                          repository: repository,
-                          mine: mine,
-                          onRetry: onRetry,
-                        )
-
-                      else if (_isVideo)
-                        _VideoMessage(
-                          message: message,
-                          repository: repository,
-                          mine: mine,
-                        )
-
-                      // -------------------------------------------------------
-                      // DOCUMENT
-                      // -------------------------------------------------------
-
-                      else if (_isDocument)
-                        _DocumentMessage(
-                          message: message,
-                          repository: repository,
-                           mine: mine,
-                        )
-
-                      // -------------------------------------------------------
-                      // VOICE
-                      // -------------------------------------------------------
-
-                      else if (_isVoice)
-                        _VoicePlayer(
-                          key: ValueKey('${message.id}-${message.mediaUrl}'),
-                          path: message.mediaUrl!,
-                          repository: repository,
-                          duration:
-                              message.voiceDurationSeconds,
-                          mine: mine,
-                          localFile:
-                              message.status == MessageStatus.sending ||
-                              message.status == MessageStatus.failed,
-                        )
-
-                      // -------------------------------------------------------
-                      // TEXT
-                      // -------------------------------------------------------
-
-                      else
-                        _TextMessage(
-                          message: message,
-                          mine: mine,
-                          onRetry: onRetry,
-                        ),
-
-                      // -------------------------------------------------------
-                      // META FOR DOCUMENT / VOICE
-                      // -------------------------------------------------------
-
-                      if (_isDocument || _isVoice) ...[
-                        const SizedBox(height: 5),
-
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Padding(
-                            padding: const EdgeInsets.only(
-                              right: 2,
+                child: message.isDeleted
+                    ? _DeletedMessage(mine: mine)
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // -------------------------------------------------------
+                          // REPLY
+                          // -------------------------------------------------------
+                          if (message.replyToMessageId != null) ...[
+                            _ReplyBubble(
+                              message: message.replyTo,
+                              mine: mine,
+                              onTap: onReplyTap,
                             ),
-                            child: _MessageMeta(
+
+                            const SizedBox(height: 5),
+                          ],
+
+                          // -------------------------------------------------------
+                          // IMAGE
+                          // -------------------------------------------------------
+                          if (_isImage)
+                            _ImageMessage(
+                              message: message,
+                              repository: repository,
+                              mine: mine,
+                              onRetry: onRetry,
+                            )
+                          else if (_isVideo)
+                            _VideoMessage(
+                              message: message,
+                              repository: repository,
+                              mine: mine,
+                            )
+                          // -------------------------------------------------------
+                          // DOCUMENT
+                          // -------------------------------------------------------
+                          else if (_isDocument)
+                            _DocumentMessage(
+                              message: message,
+                              repository: repository,
+                              mine: mine,
+                            )
+                          // -------------------------------------------------------
+                          // VOICE
+                          // -------------------------------------------------------
+                          else if (_isVoice)
+                            _VoicePlayer(
+                              key: ValueKey(
+                                '${message.id}-${message.mediaUrl}',
+                              ),
+                              path: message.mediaUrl!,
+                              repository: repository,
+                              duration: message.voiceDurationSeconds,
+                              mine: mine,
+                              localFile:
+                                  message.status == MessageStatus.sending ||
+                                  message.status == MessageStatus.failed,
+                            )
+                          // -------------------------------------------------------
+                          // TEXT
+                          // -------------------------------------------------------
+                          else
+                            _TextMessage(
                               message: message,
                               mine: mine,
                               onRetry: onRetry,
                             ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+
+                          // -------------------------------------------------------
+                          // META FOR DOCUMENT / VOICE
+                          // -------------------------------------------------------
+                          if (_isDocument || _isVoice) ...[
+                            const SizedBox(height: 5),
+
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 2),
+                                child: _MessageMeta(
+                                  message: message,
+                                  mine: mine,
+                                  onRetry: onRetry,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+              ),
+            ),
           ),
-        ),
-        ),
         ),
       ),
     );
   }
 
-  void _showMessageActions(
-    BuildContext context,
-  ) {
+  void _showMessageActions(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -3845,16 +3248,9 @@ class _MessageBubble extends StatelessWidget {
         return Container(
           decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          padding: const EdgeInsets.fromLTRB(
-            16,
-            10,
-            16,
-            18,
-          ),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -3924,8 +3320,8 @@ class _SwipeToReplyState extends State<_SwipeToReply> {
   }
 
   void _end(DragEndDetails details) {
-    final shouldReply = widget.enabled &&
-        (widget.swipeLeft ? _offset <= -44 : _offset >= 44);
+    final shouldReply =
+        widget.enabled && (widget.swipeLeft ? _offset <= -44 : _offset >= 44);
     setState(() => _offset = 0);
     _thresholdFeedbackSent = false;
     if (shouldReply) widget.onReply();
@@ -3956,7 +3352,7 @@ class _SwipeToReplyState extends State<_SwipeToReply> {
                   color: AppColors.brand.withValues(alpha: .12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: const AppIcon(
                   Icons.reply_rounded,
                   size: 19,
                   color: AppColors.brand,
@@ -3990,11 +3386,7 @@ class _SwipeToReplyState extends State<_SwipeToReply> {
 // =============================================================================
 
 class _TextMessage extends StatelessWidget {
-  const _TextMessage({
-    required this.message,
-    required this.mine,
-    this.onRetry,
-  });
+  const _TextMessage({required this.message, required this.mine, this.onRetry});
 
   final ChatMessageModel message;
   final bool mine;
@@ -4014,21 +3406,13 @@ class _TextMessage extends StatelessWidget {
             fontSize: 14,
             height: 1.34,
             fontWeight: FontWeight.w400,
-            color: mine
-                ? Colors.white
-                : AppColors.textPrimary,
+            color: mine ? Colors.white : AppColors.textPrimary,
           ),
         ),
 
         Padding(
-          padding: const EdgeInsets.only(
-            bottom: 1,
-          ),
-          child: _MessageMeta(
-            message: message,
-            mine: mine,
-            onRetry: onRetry,
-          ),
+          padding: const EdgeInsets.only(bottom: 1),
+          child: _MessageMeta(message: message, mine: mine, onRetry: onRetry),
         ),
       ],
     );
@@ -4098,21 +3482,18 @@ class _ImageMessageState extends State<_ImageMessage> {
 
     return FutureBuilder<String>(
       future: _urlFuture!,
-      builder: (
-        context,
-        snapshot,
-      ) {
+      builder: (context, snapshot) {
         return _buildImage(
           onTap: snapshot.hasData
               ? () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => _FullScreenImageViewer(
-                        url: snapshot.data!,
-                        fileName: widget.message.fileName,
-                      ),
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => _FullScreenImageViewer(
+                      url: snapshot.data!,
+                      fileName: widget.message.fileName,
                     ),
-                  )
+                  ),
+                )
               : null,
           child: snapshot.hasData
               ? Image.network(
@@ -4139,15 +3520,11 @@ class _ImageMessageState extends State<_ImageMessage> {
           // -----------------------------------------------------------------
           // TIME / SEND STATUS OVER IMAGE
           // -----------------------------------------------------------------
-
           Positioned(
             right: 7,
             bottom: 7,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 6,
-                vertical: 4,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.42),
                 borderRadius: BorderRadius.circular(8),
@@ -4176,16 +3553,14 @@ class _ImageMessageState extends State<_ImageMessage> {
     );
   }
 
-  Widget _imagePlaceholder({
-    bool error = false,
-  }) {
+  Widget _imagePlaceholder({bool error = false}) {
     return Container(
       width: 238,
       height: 190,
       color: const Color(0xFFE8EBEF),
       alignment: Alignment.center,
       child: error
-          ? Icon(
+          ? AppIcon(
               Icons.broken_image_outlined,
               size: 30,
               color: AppColors.textSecondary,
@@ -4203,7 +3578,11 @@ class _ImageMessageState extends State<_ImageMessage> {
 }
 
 class _VideoMessage extends StatefulWidget {
-  const _VideoMessage({required this.message, required this.repository, required this.mine});
+  const _VideoMessage({
+    required this.message,
+    required this.repository,
+    required this.mine,
+  });
   final ChatMessageModel message;
   final ChatRepository repository;
   final bool mine;
@@ -4218,7 +3597,9 @@ class _VideoMessageState extends State<_VideoMessage> {
   @override
   void initState() {
     super.initState();
-    _urlFuture = widget.repository.createSignedMediaUrl(widget.message.mediaUrl!);
+    _urlFuture = widget.repository.createSignedMediaUrl(
+      widget.message.mediaUrl!,
+    );
   }
 
   @override
@@ -4228,14 +3609,14 @@ class _VideoMessageState extends State<_VideoMessage> {
       builder: (context, snapshot) => InkWell(
         onTap: snapshot.hasData
             ? () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => _FullScreenVideoViewer(
-                      url: snapshot.data!,
-                      fileName: widget.message.fileName,
-                    ),
+                context,
+                MaterialPageRoute(
+                  builder: (_) => _FullScreenVideoViewer(
+                    url: snapshot.data!,
+                    fileName: widget.message.fileName,
                   ),
-                )
+                ),
+              )
             : null,
         borderRadius: BorderRadius.circular(14),
         child: Container(
@@ -4246,23 +3627,37 @@ class _VideoMessageState extends State<_VideoMessage> {
             borderRadius: BorderRadius.circular(14),
           ),
           child: snapshot.hasError
-              ? const Icon(Icons.broken_image_outlined, color: Colors.white54)
+              ? const AppIcon(
+                  Icons.broken_image_outlined,
+                  color: Colors.white54,
+                )
               : snapshot.hasData
-                  ? const Center(
-                      child: CircleAvatar(
-                        radius: 27,
-                        backgroundColor: Colors.white24,
-                        child: Icon(Icons.play_arrow_rounded, size: 35, color: Colors.white),
-                      ),
-                    )
-                  : const Center(child: CircularProgressIndicator(color: Colors.white)),
+              ? const Center(
+                  child: CircleAvatar(
+                    radius: 27,
+                    backgroundColor: Colors.white24,
+                    child: AppIcon(
+                      Icons.play_arrow_rounded,
+                      size: 35,
+                      color: Colors.white,
+                    ),
+                  ),
+                )
+              : const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
         ),
       ),
     );
   }
 }
 
-Future<void> _saveMedia(BuildContext context, String url, {required bool video, String? fileName}) async {
+Future<void> _saveMedia(
+  BuildContext context,
+  String url, {
+  required bool video,
+  String? fileName,
+}) async {
   final messenger = ScaffoldMessenger.of(context);
   try {
     var hasGalleryAccess = await Gal.hasAccess();
@@ -4273,9 +3668,7 @@ Future<void> _saveMedia(BuildContext context, String url, {required bool video, 
       if (context.mounted) {
         messenger.showSnackBar(
           const SnackBar(
-            content: Text(
-              'Gallery access is required to save this media.',
-            ),
+            content: Text('Gallery access is required to save this media.'),
           ),
         );
       }
@@ -4289,22 +3682,23 @@ Future<void> _saveMedia(BuildContext context, String url, {required bool video, 
       throw HttpException('Download failed with status ${response.statusCode}');
     }
     final bytes = await consolidateHttpClientResponseBytes(response);
-    if (bytes.isEmpty) throw const FileSystemException('Downloaded file is empty');
+    if (bytes.isEmpty)
+      throw const FileSystemException('Downloaded file is empty');
     final directory = await getTemporaryDirectory();
     final contentType = response.headers.contentType?.mimeType.toLowerCase();
     final extension = video
         ? (contentType == 'video/quicktime' ? 'mov' : 'mp4')
         : (contentType == 'image/png'
-            ? 'png'
-            : contentType == 'image/webp'
-                ? 'webp'
-                : 'jpg');
+              ? 'png'
+              : contentType == 'image/webp'
+              ? 'webp'
+              : 'jpg');
     var requestedName = fileName?.trim().isNotEmpty == true
         ? fileName!
         : 'darmaan_${DateTime.now().millisecondsSinceEpoch}.$extension';
-    if (!requestedName.contains('.')) requestedName = '$requestedName.$extension';
-    final safeName = requestedName
-        .replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+    if (!requestedName.contains('.'))
+      requestedName = '$requestedName.$extension';
+    final safeName = requestedName.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
     final file = File('${directory.path}/$safeName');
     await file.writeAsBytes(bytes, flush: true);
     if (video) {
@@ -4313,7 +3707,13 @@ Future<void> _saveMedia(BuildContext context, String url, {required bool video, 
       await Gal.putImage(file.path);
     }
     if (context.mounted) {
-      messenger.showSnackBar(SnackBar(content: Text(video ? 'Video saved to gallery.' : 'Photo saved to gallery.')));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            video ? 'Video saved to gallery.' : 'Photo saved to gallery.',
+          ),
+        ),
+      );
     }
   } on GalException catch (error) {
     if (context.mounted) {
@@ -4324,8 +3724,7 @@ Future<void> _saveMedia(BuildContext context, String url, {required bool video, 
           'There is not enough storage space to save this media.',
         GalExceptionType.notSupportedFormat =>
           'This media format is not supported by your gallery.',
-        GalExceptionType.unexpected =>
-          'The gallery could not save this media.',
+        GalExceptionType.unexpected => 'The gallery could not save this media.',
       };
       messenger.showSnackBar(SnackBar(content: Text(message)));
     }
@@ -4347,26 +3746,27 @@ class _FullScreenImageViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.white,
-          actions: [
-            IconButton(
-              tooltip: 'Save to gallery',
-              onPressed: () => _saveMedia(context, url, video: false, fileName: fileName),
-              icon: const Icon(Icons.download_rounded),
-            ),
-          ],
+    backgroundColor: Colors.black,
+    appBar: AppBar(
+      backgroundColor: Colors.black,
+      foregroundColor: Colors.white,
+      actions: [
+        IconButton(
+          tooltip: 'Save to gallery',
+          onPressed: () =>
+              _saveMedia(context, url, video: false, fileName: fileName),
+          icon: const AppIcon(Icons.download_rounded),
         ),
-        body: Center(
-          child: InteractiveViewer(
-            minScale: .8,
-            maxScale: 5,
-            child: Image.network(url, fit: BoxFit.contain, gaplessPlayback: true),
-          ),
-        ),
-      );
+      ],
+    ),
+    body: Center(
+      child: InteractiveViewer(
+        minScale: .8,
+        maxScale: 5,
+        child: Image.network(url, fit: BoxFit.contain, gaplessPlayback: true),
+      ),
+    ),
+  );
 }
 
 class _FullScreenVideoViewer extends StatefulWidget {
@@ -4409,35 +3809,49 @@ class _FullScreenVideoViewerState extends State<_FullScreenVideoViewer> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.white,
-          actions: [
-            IconButton(
-              tooltip: 'Save to gallery',
-              onPressed: () => _saveMedia(context, widget.url, video: true, fileName: widget.fileName),
-              icon: const Icon(Icons.download_rounded),
+    backgroundColor: Colors.black,
+    appBar: AppBar(
+      backgroundColor: Colors.black,
+      foregroundColor: Colors.white,
+      actions: [
+        IconButton(
+          tooltip: 'Save to gallery',
+          onPressed: () => _saveMedia(
+            context,
+            widget.url,
+            video: true,
+            fileName: widget.fileName,
+          ),
+          icon: const AppIcon(Icons.download_rounded),
+        ),
+      ],
+    ),
+    body: FutureBuilder<void>(
+      future: _initializing,
+      builder: (context, snapshot) {
+        if (snapshot.hasError)
+          return const Center(
+            child: Text(
+              'Could not play this video.',
+              style: TextStyle(color: Colors.white),
             ),
-          ],
-        ),
-        body: FutureBuilder<void>(
-          future: _initializing,
-          builder: (context, snapshot) {
-            if (snapshot.hasError) return const Center(child: Text('Could not play this video.', style: TextStyle(color: Colors.white)));
-            if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator(color: Colors.white));
-            return GestureDetector(
-              onTap: _togglePlayback,
-              child: Center(
-                child: AspectRatio(
-                  aspectRatio: _controller.value.aspectRatio,
-                  child: VideoPlayer(_controller),
-                ),
-              ),
-            );
-          },
-        ),
-      );
+          );
+        if (snapshot.connectionState != ConnectionState.done)
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          );
+        return GestureDetector(
+          onTap: _togglePlayback,
+          child: Center(
+            child: AspectRatio(
+              aspectRatio: _controller.value.aspectRatio,
+              child: VideoPlayer(_controller),
+            ),
+          ),
+        );
+      },
+    ),
+  );
 }
 
 // =============================================================================
@@ -4483,10 +3897,11 @@ class _DocumentMessage extends StatelessWidget {
   Future<void> _download(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final name = (message.fileName?.trim().isNotEmpty == true
-              ? message.fileName!
-              : 'document')
-          .replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+      final name =
+          (message.fileName?.trim().isNotEmpty == true
+                  ? message.fileName!
+                  : 'document')
+              .replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
       final location = await getSaveLocation(
         suggestedName: name,
         confirmButtonText: 'Download',
@@ -4531,15 +3946,9 @@ class _DocumentMessage extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () async {
-          final url =
-              await repository.createSignedMediaUrl(
-            message.mediaUrl!,
-          );
+          final url = await repository.createSignedMediaUrl(message.mediaUrl!);
 
-          await launchUrl(
-            Uri.parse(url),
-            mode: LaunchMode.externalApplication,
-          );
+          await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
         },
         child: Container(
           width: 245,
@@ -4557,7 +3966,7 @@ class _DocumentMessage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(11),
                 ),
                 alignment: Alignment.center,
-                child: Icon(
+                child: AppIcon(
                   _isPdf
                       ? Icons.picture_as_pdf_outlined
                       : Icons.description_outlined,
@@ -4565,18 +3974,17 @@ class _DocumentMessage extends StatelessWidget {
                   color: mine
                       ? Colors.white
                       : _isPdf
-                          ? const Color(0xFFD92D20)
-                          : AppColors.brand,
+                      ? const Color(0xFFD92D20)
+                      : AppColors.brand,
                 ),
               ),
 
               const SizedBox(width: 11),
 
-          Expanded(
-            child: Column(
+              Expanded(
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       message.fileName ?? 'Document',
@@ -4588,9 +3996,7 @@ class _DocumentMessage extends StatelessWidget {
                         fontWeight: FontWeight.w500,
 
                         // YOUR DOCUMENT NAME IS WHITE
-                        color: mine
-                            ? Colors.white
-                            : AppColors.textPrimary,
+                        color: mine ? Colors.white : AppColors.textPrimary,
                       ),
                     ),
 
@@ -4600,9 +4006,7 @@ class _DocumentMessage extends StatelessWidget {
                       _fileInfo,
                       style: GoogleFonts.outfit(
                         fontSize: 9.7,
-                        color: mine
-                            ? Colors.white70
-                            : AppColors.textSecondary,
+                        color: mine ? Colors.white70 : AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -4617,22 +4021,20 @@ class _DocumentMessage extends StatelessWidget {
                   onTap: () => _download(context),
                   customBorder: const CircleBorder(),
                   child: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: mine
-                      ? Colors.white.withValues(alpha: 0.14)
-                      : Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.download_rounded,
-                  size: 18,
-                  color: mine
-                      ? Colors.white
-                      : AppColors.textSecondary,
-                ),
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: mine
+                          ? Colors.white.withValues(alpha: 0.14)
+                          : Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: AppIcon(
+                      Icons.download_rounded,
+                      size: 18,
+                      color: mine ? Colors.white : AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ),
@@ -4647,8 +4049,6 @@ class _DocumentMessage extends StatelessWidget {
 // =============================================================================
 // VOICE PLAYER
 // =============================================================================
-
-
 
 class _VoicePlayer extends StatefulWidget {
   const _VoicePlayer({
@@ -4741,25 +4141,18 @@ class _VoicePlayerState extends State<_VoicePlayer> {
     }
   }
 
-  String _formatDuration(
-    Duration duration,
-  ) {
-    final totalSeconds =
-        duration.inSeconds;
+  String _formatDuration(Duration duration) {
+    final totalSeconds = duration.inSeconds;
 
-    final minutes =
-        totalSeconds ~/ 60;
+    final minutes = totalSeconds ~/ 60;
 
-    final seconds =
-        totalSeconds % 60;
+    final seconds = totalSeconds % 60;
 
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
   Duration get _fallbackDuration {
-    return Duration(
-      seconds: widget.duration ?? 0,
-    );
+    return Duration(seconds: widget.duration ?? 0);
   }
 
   @override
@@ -4772,9 +4165,7 @@ class _VoicePlayerState extends State<_VoicePlayer> {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = widget.mine
-        ? Colors.white
-        : AppColors.brand;
+    final primaryColor = widget.mine ? Colors.white : AppColors.brand;
 
     final secondaryColor = widget.mine
         ? Colors.white70
@@ -4788,52 +4179,38 @@ class _VoicePlayerState extends State<_VoicePlayer> {
       width: 225,
       child: StreamBuilder<PlayerState>(
         stream: _player.playerStateStream,
-        builder: (
-          context,
-          playerSnapshot,
-        ) {
+        builder: (context, playerSnapshot) {
           final state = playerSnapshot.data;
-          final playing = state?.playing == true &&
+          final playing =
+              state?.playing == true &&
               state?.processingState != ProcessingState.completed;
 
           return Row(
-            crossAxisAlignment:
-                CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // -------------------------------------------------------------
               // PLAY BUTTON
               // -------------------------------------------------------------
-
               Material(
                 color: widget.mine
-                    ? Colors.white.withValues(
-                        alpha: 0.16,
-                      )
-                    : AppColors.brand.withValues(
-                        alpha: 0.10,
-                      ),
+                    ? Colors.white.withValues(alpha: 0.16)
+                    : AppColors.brand.withValues(alpha: 0.10),
                 shape: const CircleBorder(),
                 child: InkWell(
-                  onTap:
-                      _loading ? null : _toggle,
-                  customBorder:
-                      const CircleBorder(),
+                  onTap: _loading ? null : _toggle,
+                  customBorder: const CircleBorder(),
                   child: SizedBox(
                     width: 44,
                     height: 44,
                     child: _loading
                         ? Padding(
-                            padding:
-                                const EdgeInsets.all(
-                              12,
-                            ),
-                            child:
-                                CircularProgressIndicator(
+                            padding: const EdgeInsets.all(12),
+                            child: CircularProgressIndicator(
                               strokeWidth: 2,
                               color: primaryColor,
                             ),
                           )
-                        : Icon(
+                        : AppIcon(
                             playing
                                 ? Icons.pause_rounded
                                 : Icons.play_arrow_rounded,
@@ -4849,173 +4226,114 @@ class _VoicePlayerState extends State<_VoicePlayer> {
               // -------------------------------------------------------------
               // AUDIO DETAILS
               // -------------------------------------------------------------
-
               Expanded(
                 child: StreamBuilder<Duration>(
                   stream: _player.positionStream,
-                  builder: (
-                    context,
-                    positionSnapshot,
-                  ) {
-                    final position =
-                        positionSnapshot.data ??
-                            Duration.zero;
+                  builder: (context, positionSnapshot) {
+                    final position = positionSnapshot.data ?? Duration.zero;
 
-                    final playerDuration =
-                        _player.duration;
+                    final playerDuration = _player.duration;
 
-                    final total =
-                        playerDuration ??
-                            _fallbackDuration;
+                    final total = playerDuration ?? _fallbackDuration;
 
-                    final totalMs =
-                        total.inMilliseconds <= 0
-                            ? 1
-                            : total.inMilliseconds;
+                    final totalMs = total.inMilliseconds <= 0
+                        ? 1
+                        : total.inMilliseconds;
 
-                    final progress =
-                        (position.inMilliseconds /
-                                totalMs)
-                            .clamp(
+                    final progress = (position.inMilliseconds / totalMs).clamp(
                       0.0,
                       1.0,
                     );
 
                     return Column(
-                      mainAxisSize:
-                          MainAxisSize.min,
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // ---------------------------------------------------
                         // WAVEFORM
                         // ---------------------------------------------------
-
                         SizedBox(
                           height: 25,
                           child: LayoutBuilder(
-                            builder: (
-                              context,
-                              constraints,
-                            ) {
+                            builder: (context, constraints) {
                               const barWidth = 2.2;
                               const spacing = 2.4;
 
                               final count =
-                                  (constraints.maxWidth /
-                                          (barWidth +
-                                              spacing))
+                                  (constraints.maxWidth / (barWidth + spacing))
                                       .floor();
 
                               return Row(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.center,
-                                children:
-                                    List.generate(
-                                  count,
-                                  (index) {
-                                    final fraction =
-                                        count <= 1
-                                            ? 0.0
-                                            : index /
-                                                (count -
-                                                    1);
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: List.generate(count, (index) {
+                                  final fraction = count <= 1
+                                      ? 0.0
+                                      : index / (count - 1);
 
-                                    final active =
-                                        fraction <=
-                                            progress;
+                                  final active = fraction <= progress;
 
-                                    final pattern =
-                                        [
-                                      7.0,
-                                      12.0,
-                                      18.0,
-                                      10.0,
-                                      15.0,
-                                      21.0,
-                                      13.0,
-                                      8.0,
-                                      17.0,
-                                      11.0,
-                                      20.0,
-                                      14.0,
-                                    ];
+                                  final pattern = [
+                                    7.0,
+                                    12.0,
+                                    18.0,
+                                    10.0,
+                                    15.0,
+                                    21.0,
+                                    13.0,
+                                    8.0,
+                                    17.0,
+                                    11.0,
+                                    20.0,
+                                    14.0,
+                                  ];
 
-                                    final height =
-                                        pattern[
-                                            index %
-                                                pattern
-                                                    .length];
+                                  final height =
+                                      pattern[index % pattern.length];
 
-                                    return Container(
-                                      width:
-                                          barWidth,
-                                      height:
-                                          height,
-                                      margin:
-                                          const EdgeInsets
-                                              .only(
-                                        right:
-                                            spacing,
-                                      ),
-                                      decoration:
-                                          BoxDecoration(
-                                        color: active
-                                            ? primaryColor
-                                            : inactiveColor,
-                                        borderRadius:
-                                            BorderRadius
-                                                .circular(
-                                          20,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
+                                  return Container(
+                                    width: barWidth,
+                                    height: height,
+                                    margin: const EdgeInsets.only(
+                                      right: spacing,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: active
+                                          ? primaryColor
+                                          : inactiveColor,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                  );
+                                }),
                               );
                             },
                           ),
                         ),
 
-                        const SizedBox(
-                          height: 4,
-                        ),
+                        const SizedBox(height: 4),
 
                         // ---------------------------------------------------
                         // TIME
                         // ---------------------------------------------------
-
                         Row(
                           children: [
                             Text(
-                              position >
-                                      Duration.zero
-                                  ? _formatDuration(
-                                      position,
-                                    )
-                                  : _formatDuration(
-                                      total,
-                                    ),
-                              style:
-                                  GoogleFonts.outfit(
+                              position > Duration.zero
+                                  ? _formatDuration(position)
+                                  : _formatDuration(total),
+                              style: GoogleFonts.outfit(
                                 fontSize: 9.7,
                                 height: 1,
-                                fontWeight:
-                                    FontWeight
-                                        .w400,
-                                color:
-                                    secondaryColor,
+                                fontWeight: FontWeight.w400,
+                                color: secondaryColor,
                               ),
                             ),
 
                             const Spacer(),
 
-                            Icon(
-                              Icons
-                                  .mic_rounded,
+                            AppIcon(
+                              Icons.mic_rounded,
                               size: 12,
-                              color:
-                                  secondaryColor,
+                              color: secondaryColor,
                             ),
                           ],
                         ),
@@ -5032,17 +4350,11 @@ class _VoicePlayerState extends State<_VoicePlayer> {
   }
 }
 
-
-
 // =============================================================================
 // REPLY BUBBLE
 // =============================================================================
 class _ReplyBubble extends StatelessWidget {
-  const _ReplyBubble({
-    required this.message,
-    required this.mine,
-    this.onTap,
-  });
+  const _ReplyBubble({required this.message, required this.mine, this.onTap});
 
   final ChatMessageModel? message;
   final bool mine;
@@ -5094,9 +4406,7 @@ class _ReplyBubble extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        constraints: const BoxConstraints(
-          minWidth: 130,
-        ),
+        constraints: const BoxConstraints(minWidth: 130),
         margin: const EdgeInsets.only(bottom: 7),
         padding: const EdgeInsets.fromLTRB(9, 7, 10, 7),
         decoration: BoxDecoration(
@@ -5116,7 +4426,7 @@ class _ReplyBubble extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(
+            AppIcon(
               _icon,
               size: 14,
               color: mine ? Colors.white70 : AppColors.textSecondary,
@@ -5146,26 +4456,18 @@ class _ReplyBubble extends StatelessWidget {
 // DELETED
 // =============================================================================
 class _DeletedMessage extends StatelessWidget {
-  const _DeletedMessage({
-    required this.mine,
-  });
+  const _DeletedMessage({required this.mine});
 
   final bool mine;
 
   @override
   Widget build(BuildContext context) {
-    final color = mine
-        ? Colors.white70
-        : AppColors.textPrimary;
+    final color = mine ? Colors.white70 : AppColors.textPrimary;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.block_rounded,
-          size: 14,
-          color: color,
-        ),
+        AppIcon(Icons.block_rounded, size: 14, color: color),
 
         const SizedBox(width: 6),
 
@@ -5181,7 +4483,6 @@ class _DeletedMessage extends StatelessWidget {
     );
   }
 }
-
 
 // =============================================================================
 // MESSAGE META
@@ -5204,16 +4505,14 @@ class _MessageMeta extends StatelessWidget {
     final metaColor = onMedia
         ? Colors.white
         : mine
-            ? Colors.white70
-            : AppColors.textSecondary;
+        ? Colors.white70
+        : AppColors.textSecondary;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          DateFormat('h:mm a').format(
-            message.createdAt.toLocal(),
-          ),
+          DateFormat('h:mm a').format(message.createdAt.toLocal()),
           style: GoogleFonts.outfit(
             fontSize: 8.8,
             height: 1,
@@ -5230,23 +4529,23 @@ class _MessageMeta extends StatelessWidget {
             onTap: message.status == MessageStatus.failed ? onRetry : null,
             child: Padding(
               padding: const EdgeInsets.all(2),
-              child: Icon(
+              child: AppIcon(
                 message.status == MessageStatus.sending
                     ? Icons.access_time_rounded
                     : message.status == MessageStatus.failed
-                        ? Icons.error_outline_rounded
-                        : message.status == MessageStatus.read ||
-                                message.status == MessageStatus.delivered
-                            ? Icons.done_all_rounded
-                            : Icons.done_rounded,
+                    ? Icons.error_outline_rounded
+                    : message.status == MessageStatus.read ||
+                          message.status == MessageStatus.delivered
+                    ? Icons.done_all_rounded
+                    : Icons.done_rounded,
                 size: message.status == MessageStatus.failed ? 15 : 13,
                 color: message.status == MessageStatus.failed
                     ? const Color(0xFFFFD2CC)
                     : onMedia
-                        ? Colors.white
-                        : message.status == MessageStatus.read
-                            ? Colors.white
-                            : Colors.white70,
+                    ? Colors.white
+                    : message.status == MessageStatus.read
+                    ? Colors.white
+                    : Colors.white70,
               ),
             ),
           ),
@@ -5275,48 +4574,26 @@ class _MessageAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive
-        ? const Color(
-            0xFFB42318,
-          )
-        : AppColors
-            .textPrimary;
+    final color = destructive ? const Color(0xFFB42318) : AppColors.textPrimary;
 
     return Material(
-      color:
-          Colors.transparent,
+      color: Colors.transparent,
       child: InkWell(
-        onTap:
-            onTap,
-        borderRadius:
-            BorderRadius.circular(
-          13,
-        ),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(13),
         child: Padding(
-          padding:
-              const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 13,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
           child: Row(
             children: [
-              Icon(
-                icon,
-                size: 20,
-                color: color,
-              ),
+              AppIcon(icon, size: 20, color: color),
 
-              const SizedBox(
-                width: 13,
-              ),
+              const SizedBox(width: 13),
 
               Text(
                 title,
-                style:
-                    GoogleFonts.outfit(
+                style: GoogleFonts.outfit(
                   fontSize: 14,
-                  fontWeight:
-                      FontWeight.w500,
+                  fontWeight: FontWeight.w500,
                   color: color,
                 ),
               ),
@@ -5374,25 +4651,19 @@ class _Composer extends StatelessWidget {
       return '';
     }
 
-    if (reply!.text
-            ?.trim()
-            .isNotEmpty ==
-        true) {
+    if (reply!.text?.trim().isNotEmpty == true) {
       return reply!.text!;
     }
 
-    if (reply!.type ==
-        MessageType.image) {
+    if (reply!.type == MessageType.image) {
       return 'Photo';
     }
 
-    if (reply!.type ==
-        MessageType.voice) {
+    if (reply!.type == MessageType.voice) {
       return 'Voice message';
     }
 
-    return reply!.fileName ??
-        'Document';
+    return reply!.fileName ?? 'Document';
   }
 
   @override
@@ -5400,95 +4671,51 @@ class _Composer extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        color:
-            const Color(
-          0xFFF0EEEA,
-        ),
-        padding:
-            const EdgeInsets.fromLTRB(
-          7,
-          6,
-          13,
-          7,
-        ),
+        color: const Color(0xFFF0EEEA),
+        padding: const EdgeInsets.fromLTRB(7, 6, 13, 7),
         child: Column(
-          mainAxisSize:
-              MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min,
           children: [
             // -----------------------------------------------------------------
             // REPLY PREVIEW
             // -----------------------------------------------------------------
-
             if (reply != null && !recording)
               Container(
-                margin:
-                    const EdgeInsets.fromLTRB(
-                  4,
-                  0,
-                  4,
-                  6,
-                ),
-                padding:
-                    const EdgeInsets.fromLTRB(
-                  10,
-                  7,
-                  6,
-                  7,
-                ),
-                decoration:
-                    BoxDecoration(
-                  color:
-                      Colors.white,
-                  borderRadius:
-                      BorderRadius.circular(
-                    10,
-                  ),
+                margin: const EdgeInsets.fromLTRB(4, 0, 4, 6),
+                padding: const EdgeInsets.fromLTRB(10, 7, 6, 7),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
                   border: Border(
-                    left: BorderSide(
-                      color:
-                          AppColors.brand,
-                      width: 3,
-                    ),
+                    left: BorderSide(color: AppColors.brand, width: 3),
                   ),
                 ),
                 child: Row(
                   children: [
-                    Icon(
+                    AppIcon(
                       Icons.reply_rounded,
                       size: 15,
-                      color:
-                          AppColors.brand,
+                      color: AppColors.brand,
                     ),
 
-                    const SizedBox(
-                      width: 7,
-                    ),
+                    const SizedBox(width: 7),
 
                     Expanded(
                       child: Text(
                         _replyText,
                         maxLines: 1,
-                        overflow:
-                            TextOverflow.ellipsis,
-                        style:
-                            GoogleFonts.outfit(
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(
                           fontSize: 11,
-                          color: AppColors
-                              .textSecondary,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ),
 
                     IconButton(
-                      visualDensity:
-                          VisualDensity.compact,
-                      onPressed:
-                          onCancelReply,
-                      icon:
-                          const Icon(
-                        Icons.close_rounded,
-                        size: 17,
-                      ),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: onCancelReply,
+                      icon: const AppIcon(Icons.close_rounded, size: 17),
                     ),
                   ],
                 ),
@@ -5497,7 +4724,6 @@ class _Composer extends StatelessWidget {
             // -----------------------------------------------------------------
             // RECORDING PANEL OR NORMAL INPUT ROW
             // -----------------------------------------------------------------
-
             if (recording)
               _VoiceRecordingPanel(
                 elapsed: recordingElapsed,
@@ -5509,69 +4735,43 @@ class _Composer extends StatelessWidget {
               )
             else
               Row(
-                crossAxisAlignment:
-                    CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   // ---------------------------------------------------------
                   // MESSAGE FIELD
                   // ---------------------------------------------------------
-
                   Expanded(
-                    child:
-                        Container(
-                      constraints:
-                          const BoxConstraints(
-                        minHeight: 47,
-                      ),
-                      decoration:
-                          BoxDecoration(
-                        color:
-                            Colors.white,
-                        borderRadius:
-                            BorderRadius.circular(
-                          24,
-                        ),
+                    child: Container(
+                      constraints: const BoxConstraints(minHeight: 47),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
                       ),
                       child: Row(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Expanded(
-                            child:
-                                TextField(
-                              controller:
-                                  controller,
+                            child: TextField(
+                              controller: controller,
                               onChanged: onChanged,
                               minLines: 1,
                               maxLines: 5,
-                              textCapitalization:
-                                  TextCapitalization
-                                      .sentences,
-                              keyboardType:
-                                  TextInputType.multiline,
-                              style:
-                                  GoogleFonts.outfit(
+                              textCapitalization: TextCapitalization.sentences,
+                              keyboardType: TextInputType.multiline,
+                              style: GoogleFonts.outfit(
                                 fontSize: 14,
                                 height: 1.35,
-                                color: AppColors
-                                    .textPrimary,
+                                color: AppColors.textPrimary,
                               ),
-                              decoration:
-                                  InputDecoration(
-                                hintText:
-                                    'Message',
-                                hintStyle:
-                                    GoogleFonts.outfit(
+                              decoration: InputDecoration(
+                                hintText: 'Message',
+                                hintStyle: GoogleFonts.outfit(
                                   fontSize: 14,
-                                  color: AppColors
-                                      .textSecondary,
+                                  color: AppColors.textSecondary,
                                 ),
-                                border:
-                                    InputBorder.none,
-                                isDense:
-                                    true,
-                                contentPadding:
-                                    const EdgeInsets.fromLTRB(
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding: const EdgeInsets.fromLTRB(
                                   16,
                                   14,
                                   4,
@@ -5586,7 +4786,7 @@ class _Composer extends StatelessWidget {
                               tooltip: 'Share a file',
                               onPressed: sending ? null : onAttach,
                               visualDensity: VisualDensity.compact,
-                              icon: Icon(
+                              icon: AppIcon(
                                 Icons.attach_file_rounded,
                                 size: 22,
                                 color: AppColors.textSecondary,
@@ -5598,27 +4798,15 @@ class _Composer extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(
-                    width: 6,
-                  ),
+                  const SizedBox(width: 6),
 
                   // ---------------------------------------------------------
                   // SEND / MIC
                   // ---------------------------------------------------------
-
-                  ValueListenableBuilder<
-                      TextEditingValue>(
-                    valueListenable:
-                        controller,
-                    builder: (
-                      context,
-                      value,
-                      _,
-                    ) {
-                      final hasText =
-                          value.text
-                              .trim()
-                              .isNotEmpty;
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: controller,
+                    builder: (context, value, _) {
+                      final hasText = value.text.trim().isNotEmpty;
 
                       if (hasText) {
                         return _RoundComposerButton(
@@ -5666,12 +4854,10 @@ class _VoiceRecordingPanel extends StatefulWidget {
   final VoidCallback onSend;
 
   @override
-  State<_VoiceRecordingPanel> createState() =>
-      _VoiceRecordingPanelState();
+  State<_VoiceRecordingPanel> createState() => _VoiceRecordingPanelState();
 }
 
 class _VoiceRecordingPanelState extends State<_VoiceRecordingPanel> {
-
   String get _time {
     final minutes = widget.elapsed.inMinutes
         .remainder(60)
@@ -5728,43 +4914,37 @@ class _VoiceRecordingPanelState extends State<_VoiceRecordingPanel> {
                   height: 24,
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                          const barWidth = 2.4;
-                          const spacing = 2.6;
-                          final count =
-                              (constraints.maxWidth /
-                                      (barWidth + spacing))
-                                  .floor();
+                      const barWidth = 2.4;
+                      const spacing = 2.6;
+                      final count =
+                          (constraints.maxWidth / (barWidth + spacing)).floor();
 
-                          return Row(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.center,
-                            children: List.generate(count, (index) {
-                              final sourceIndex = widget.waveform.isEmpty
-                                  ? 0
-                                  : (index * widget.waveform.length / count)
-                                      .floor()
-                                      .clamp(0, widget.waveform.length - 1);
-                              final level = widget.waveform.isEmpty
-                                  ? .08
-                                  : widget.waveform[sourceIndex];
-                              final height = 4.0 + (level * 18.0);
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: List.generate(count, (index) {
+                          final sourceIndex = widget.waveform.isEmpty
+                              ? 0
+                              : (index * widget.waveform.length / count)
+                                    .floor()
+                                    .clamp(0, widget.waveform.length - 1);
+                          final level = widget.waveform.isEmpty
+                              ? .08
+                              : widget.waveform[sourceIndex];
+                          final height = 4.0 + (level * 18.0);
 
-                              return Container(
-                                width: barWidth,
-                                height: height,
-                                margin: const EdgeInsets.only(
-                                  right: spacing,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: widget.paused
-                                      ? const Color(0xFFD8DCE1)
-                                      : AppColors.brand,
-                                  borderRadius:
-                                      BorderRadius.circular(20),
-                                ),
-                              );
-                            }),
+                          return Container(
+                            width: barWidth,
+                            height: height,
+                            margin: const EdgeInsets.only(right: spacing),
+                            decoration: BoxDecoration(
+                              color: widget.paused
+                                  ? const Color(0xFFD8DCE1)
+                                  : AppColors.brand,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                           );
+                        }),
+                      );
                     },
                   ),
                 ),
@@ -5788,7 +4968,7 @@ class _VoiceRecordingPanelState extends State<_VoiceRecordingPanel> {
                   child: const SizedBox(
                     width: 40,
                     height: 40,
-                    child: Icon(
+                    child: AppIcon(
                       Icons.delete_outline_rounded,
                       size: 20,
                       color: Color(0xFFD92D20),
@@ -5807,13 +4987,11 @@ class _VoiceRecordingPanelState extends State<_VoiceRecordingPanel> {
                     borderRadius: BorderRadius.circular(20),
                     onTap: widget.onTogglePause,
                     child: Padding(
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 9),
+                      padding: const EdgeInsets.symmetric(vertical: 9),
                       child: Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          AppIcon(
                             widget.paused
                                 ? Icons.play_arrow_rounded
                                 : Icons.pause_rounded,
@@ -5847,7 +5025,7 @@ class _VoiceRecordingPanelState extends State<_VoiceRecordingPanel> {
                   child: const SizedBox(
                     width: 40,
                     height: 40,
-                    child: Icon(
+                    child: AppIcon(
                       Icons.send_rounded,
                       size: 18,
                       color: Colors.white,
@@ -5890,9 +5068,12 @@ class _RoundComposerButton extends StatelessWidget {
           child: busy
               ? const Padding(
                   padding: EdgeInsets.all(14),
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
-              : Icon(icon, size: 22, color: Colors.white),
+              : AppIcon(icon, size: 22, color: Colors.white),
         ),
       ),
     );
@@ -5917,126 +5098,76 @@ class _AttachmentSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration:
-          const BoxDecoration(
-        color:
-            Colors.white,
-        borderRadius:
-            BorderRadius.vertical(
-          top:
-              Radius.circular(
-            24,
-          ),
-        ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding:
-          const EdgeInsets.fromLTRB(
-        18,
-        10,
-        18,
-        24,
-      ),
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
       child: Column(
-        mainAxisSize:
-            MainAxisSize.min,
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
             child: Container(
               width: 36,
               height: 4,
-              decoration:
-                  BoxDecoration(
-                color:
-                    const Color(
-                  0xFFD7DADF,
-                ),
-                borderRadius:
-                    BorderRadius.circular(
-                  20,
-                ),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD7DADF),
+                borderRadius: BorderRadius.circular(20),
               ),
             ),
           ),
 
-          const SizedBox(
-            height: 18,
-          ),
+          const SizedBox(height: 18),
 
           Text(
             'Share in chat',
-            style:
-                GoogleFonts.outfit(
+            style: GoogleFonts.outfit(
               fontSize: 16,
-              fontWeight:
-                  FontWeight.w500,
-              color:
-                  AppColors.textPrimary,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
             ),
           ),
 
-          const SizedBox(
-            height: 4,
-          ),
+          const SizedBox(height: 4),
 
           Text(
             'Choose what you would like to send',
-            style:
-                GoogleFonts.outfit(
+            style: GoogleFonts.outfit(
               fontSize: 11.5,
-              color:
-                  AppColors.textSecondary,
+              color: AppColors.textSecondary,
             ),
           ),
 
-          const SizedBox(
-            height: 18,
-          ),
+          const SizedBox(height: 18),
 
           Row(
             children: [
               Expanded(
-                child:
-                    _AttachmentChoice(
-                  icon:
-                      Icons.photo_camera_outlined,
-                  label:
-                      'Camera',
-                  onTap:
-                      onCamera,
+                child: _AttachmentChoice(
+                  icon: Icons.photo_camera_outlined,
+                  label: 'Camera',
+                  onTap: onCamera,
                 ),
               ),
 
-              const SizedBox(
-                width: 10,
-              ),
+              const SizedBox(width: 10),
 
               Expanded(
-                child:
-                    _AttachmentChoice(
-                  icon:
-                      Icons.photo_library_outlined,
-                  label:
-                      'Gallery',
-                  onTap:
-                      onGallery,
+                child: _AttachmentChoice(
+                  icon: Icons.photo_library_outlined,
+                  label: 'Gallery',
+                  onTap: onGallery,
                 ),
               ),
 
-              const SizedBox(
-                width: 10,
-              ),
+              const SizedBox(width: 10),
 
               Expanded(
-                child:
-                    _AttachmentChoice(
-                  icon:
-                      Icons.description_outlined,
-                  label:
-                      'Document',
-                  onTap:
-                      onDocument,
+                child: _AttachmentChoice(
+                  icon: Icons.description_outlined,
+                  label: 'Document',
+                  onTap: onDocument,
                 ),
               ),
             ],
@@ -6061,64 +5192,34 @@ class _AttachmentChoice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color:
-          const Color(
-        0xFFF6F7F9,
-      ),
-      borderRadius:
-          BorderRadius.circular(
-        16,
-      ),
+      color: const Color(0xFFF6F7F9),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        onTap:
-            onTap,
-        borderRadius:
-            BorderRadius.circular(
-          16,
-        ),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding:
-              const EdgeInsets.symmetric(
-            vertical: 16,
-            horizontal: 8,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           child: Column(
-            mainAxisSize:
-                MainAxisSize.min,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 width: 42,
                 height: 42,
-                decoration:
-                    BoxDecoration(
-                  color: AppColors.brand
-                      .withValues(
-                    alpha: 0.08,
-                  ),
-                  shape:
-                      BoxShape.circle,
+                decoration: BoxDecoration(
+                  color: AppColors.brand.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color:
-                      AppColors.brand,
-                ),
+                child: AppIcon(icon, size: 20, color: AppColors.brand),
               ),
 
-              const SizedBox(
-                height: 9,
-              ),
+              const SizedBox(height: 9),
 
               Text(
                 label,
-                style:
-                    GoogleFonts.outfit(
+                style: GoogleFonts.outfit(
                   fontSize: 11.5,
-                  fontWeight:
-                      FontWeight.w500,
-                  color: AppColors
-                      .textPrimary,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
@@ -6134,107 +5235,215 @@ class _AttachmentChoice extends StatelessWidget {
 // =============================================================================
 
 class _EmptyChat extends StatelessWidget {
-  const _EmptyChat({
-    required this.peerName,
-  });
+  const _EmptyChat({required this.peerName, this.connected = false});
 
   final String peerName;
+  final bool connected;
+
+  String get _doctorNameWithoutTitle => peerName
+      .trim()
+      .replaceFirst(RegExp(r'^dr\.?\s+', caseSensitive: false), '')
+      .trim();
 
   @override
   Widget build(BuildContext context) {
+    if (connected) {
+      return Column(
+        children: [
+          _DateDivider(date: DateTime.now()),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxHeight < 280;
+                final verticalPadding = compact ? 8.0 : 0.0;
+                final minimumHeight = constraints.maxHeight > verticalPadding * 2
+                    ? constraints.maxHeight - verticalPadding * 2
+                    : 0.0;
+                final outerSize = compact ? 88.0 : 116.0;
+                final innerSize = compact ? 62.0 : 80.0;
+
+                return SingleChildScrollView(
+                  primary: false,
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: verticalPadding,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: minimumHeight),
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: compact ? 0 : 28),
+                        child: Semantics(
+                          label: 'Connected with Dr $_doctorNameWithoutTitle',
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: outerSize,
+                                height: outerSize,
+                                decoration: BoxDecoration(
+                                  color: AppColors.brand.withValues(alpha: 0.07),
+                                  shape: BoxShape.circle,
+                                ),
+                                alignment: Alignment.center,
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Container(
+                                      width: innerSize,
+                                      height: innerSize,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.brand,
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.brand.withValues(
+                                              alpha: 0.18,
+                                            ),
+                                            blurRadius: compact ? 12 : 16,
+                                            offset: Offset(0, compact ? 4 : 6),
+                                          ),
+                                        ],
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Icon(
+                                        Icons.chat_bubble_rounded,
+                                        size: compact ? 25 : 31,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    Positioned(
+                                      right: -2,
+                                      bottom: -2,
+                                      child: Container(
+                                        width: compact ? 22 : 25,
+                                        height: compact ? 22 : 25,
+                                        padding: const EdgeInsets.all(3),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Container(
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFF18A957),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Icon(
+                                            Icons.check_rounded,
+                                            size: compact ? 11 : 13,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: compact ? 14 : 22),
+                              Text(
+                                "You're connected",
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.outfit(
+                                  fontSize: compact ? 16 : 18,
+                                  height: 1.2,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              SizedBox(height: compact ? 5 : 8),
+                              Text(
+                                'Message Dr $_doctorNameWithoutTitle while you wait',
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.outfit(
+                                  fontSize: compact ? 11.5 : 12.5,
+                                  height: 1.35,
+                                  fontWeight: FontWeight.w400,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    }
+
     return Center(
       child: Padding(
-        padding:
-            const EdgeInsets.symmetric(
-          horizontal: 42,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 42),
         child: Column(
-          mainAxisSize:
-              MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               width: 66,
               height: 66,
-              decoration:
-                  BoxDecoration(
-                color:
-                    Colors.white.withValues(
-                  alpha: 0.9,
-                ),
-                shape:
-                    BoxShape.circle,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.9),
+                shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons
-                    .chat_bubble_outline_rounded,
+              child: AppIcon(
+                Icons.chat_bubble_outline_rounded,
                 size: 26,
-                color:
-                    AppColors.brand,
+                color: AppColors.brand,
               ),
             ),
 
-            const SizedBox(
-              height: 17,
-            ),
+            const SizedBox(height: 17),
 
             Text(
               'Start the conversation',
-              textAlign:
-                  TextAlign.center,
-              style:
-                  GoogleFonts.outfit(
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
                 fontSize: 16,
-                fontWeight:
-                    FontWeight.w500,
-                color:
-                    AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
               ),
             ),
 
-            const SizedBox(
-              height: 7,
-            ),
+            const SizedBox(height: 7),
 
             Text(
               'Share symptoms, reports or questions with $peerName here.',
-              textAlign:
-                  TextAlign.center,
-              style:
-                  GoogleFonts.outfit(
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
                 fontSize: 12.3,
                 height: 1.5,
-                color: AppColors
-                    .textSecondary,
+                color: AppColors.textSecondary,
               ),
             ),
 
-            const SizedBox(
-              height: 13,
-            ),
+            const SizedBox(height: 13),
 
             Row(
-              mainAxisSize:
-                  MainAxisSize.min,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons
-                      .lock_outline_rounded,
+                AppIcon(
+                  Icons.lock_outline_rounded,
                   size: 13,
-                  color: AppColors
-                      .textSecondary,
+                  color: AppColors.textSecondary,
                 ),
 
-                const SizedBox(
-                  width: 5,
-                ),
+                const SizedBox(width: 5),
 
                 Text(
                   'Private consultation chat',
-                  style:
-                      GoogleFonts.outfit(
+                  style: GoogleFonts.outfit(
                     fontSize: 10.3,
-                    color: AppColors
-                        .textSecondary,
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
@@ -6265,6 +5474,96 @@ class _PatientAppointmentStatusBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (session.bookingStatus == 'accepted' &&
+        !session.isInProgress &&
+        !session.isRequestPending) {
+      return Container(
+        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(14, 8, 12, 7),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 62),
+          padding: const EdgeInsets.only(left: 11, right: 5),
+          decoration: BoxDecoration(
+            color: AppColors.brand.withValues(alpha: 0.055),
+            borderRadius: BorderRadius.circular(13),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: const AppIcon(
+                  Icons.schedule_rounded,
+                  size: 18,
+                  color: AppColors.brand,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Appointment accepted',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$doctorName will start the consultation soon.',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                        fontSize: 10.5,
+                        height: 1.3,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 38,
+                child: TextButton(
+                  onPressed: cancelling ? null : onCancel,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.textSecondary,
+                    disabledForegroundColor: AppColors.textSecondary,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    minimumSize: const Size(48, 38),
+                  ),
+                  child: cancelling
+                      ? const SizedBox.square(
+                          dimension: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          'Cancel',
+                          style: GoogleFonts.outfit(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final status = _status;
     return Container(
       color: Colors.white,
@@ -6286,7 +5585,7 @@ class _PatientAppointmentStatusBar extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: Icon(status.icon, size: 18, color: status.color),
+              child: AppIcon(status.icon, size: 18, color: status.color),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -6436,95 +5735,57 @@ class _SessionRequestBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color:
-          Colors.white,
-      padding:
-          const EdgeInsets.fromLTRB(
-        12,
-        9,
-        12,
-        8,
-      ),
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(12, 9, 12, 8),
       child: Container(
-        padding:
-            const EdgeInsets.fromLTRB(
-          12,
-          10,
-          10,
-          10,
-        ),
-        decoration:
-            BoxDecoration(
-          color: AppColors.brand
-              .withValues(
-            alpha: 0.055,
-          ),
-          borderRadius:
-              BorderRadius.circular(
-            13,
-          ),
+        padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+        decoration: BoxDecoration(
+          color: AppColors.brand.withValues(alpha: 0.055),
+          borderRadius: BorderRadius.circular(13),
         ),
         child: Row(
           children: [
             Container(
               width: 35,
               height: 35,
-              decoration:
-                  const BoxDecoration(
-                color:
-                    Colors.white,
-                shape:
-                    BoxShape.circle,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: AppIcon(
                 pending
-                    ? Icons
-                        .schedule_rounded
-                    : Icons
-                        .medical_services_outlined,
+                    ? Icons.schedule_rounded
+                    : Icons.medical_services_outlined,
                 size: 17,
-                color:
-                    AppColors.brand,
+                color: AppColors.brand,
               ),
             ),
 
-            const SizedBox(
-              width: 10,
-            ),
+            const SizedBox(width: 10),
 
             Expanded(
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    pending
-                        ? 'Start request sent'
-                        : 'Ready to start?',
-                    style:
-                        GoogleFonts.outfit(
+                    pending ? 'Start request sent' : 'Ready to start?',
+                    style: GoogleFonts.outfit(
                       fontSize: 12,
-                      fontWeight:
-                          FontWeight.w500,
-                      color: AppColors
-                          .textPrimary,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
                     ),
                   ),
 
-                  const SizedBox(
-                    height: 2,
-                  ),
+                  const SizedBox(height: 2),
 
                   Text(
                     pending
                         ? 'Waiting for the patient to confirm.'
                         : 'Ask the patient to begin the consultation.',
-                    style:
-                        GoogleFonts.outfit(
+                    style: GoogleFonts.outfit(
                       fontSize: 10.4,
                       height: 1.3,
-                      color: AppColors
-                          .textSecondary,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -6532,49 +5793,36 @@ class _SessionRequestBar extends StatelessWidget {
             ),
 
             if (!pending) ...[
-              const SizedBox(
-                width: 8,
-              ),
+              const SizedBox(width: 8),
 
               SizedBox(
                 height: 36,
-                child:
-                    FilledButton(
-                  onPressed:
-                      busy
-                          ? null
-                          : onRequest,
-                  style:
-                    FilledButton.styleFrom(
-  elevation: 0,
-  backgroundColor: AppColors.brand,
-  foregroundColor: Colors.white,
-  padding: const EdgeInsets.symmetric(
-    horizontal: 12,
-  ),
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(9),
-  ),
-),
-                
+                child: FilledButton(
+                  onPressed: busy ? null : onRequest,
+                  style: FilledButton.styleFrom(
+                    elevation: 0,
+                    backgroundColor: AppColors.brand,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                  ),
+
                   child: busy
                       ? const SizedBox(
                           width: 14,
                           height: 14,
-                          child:
-                              CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color:
-                                Colors.white,
+                            color: Colors.white,
                           ),
                         )
                       : Text(
                           'Request',
-                          style:
-                              GoogleFonts.outfit(
+                          style: GoogleFonts.outfit(
                             fontSize: 11,
-                            fontWeight:
-                                FontWeight.w500,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                 ),
@@ -6616,8 +5864,9 @@ class _ActiveConsultationBar extends StatelessWidget {
           style: TextButton.styleFrom(
             foregroundColor: const Color(0xFFB42318),
             backgroundColor: const Color(0xFFFFF1F0),
-            disabledForegroundColor:
-                const Color(0xFFB42318).withValues(alpha: 0.6),
+            disabledForegroundColor: const Color(
+              0xFFB42318,
+            ).withValues(alpha: 0.6),
             disabledBackgroundColor: const Color(0xFFFFF1F0),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
@@ -6631,7 +5880,7 @@ class _ActiveConsultationBar extends StatelessWidget {
                     color: Color(0xFFB42318),
                   ),
                 )
-              : const Icon(Icons.stop_circle_outlined, size: 20),
+              : const AppIcon(Icons.stop_circle_outlined, size: 20),
           label: Text(
             ending ? endingLabel : label,
             style: GoogleFonts.outfit(
@@ -6667,12 +5916,7 @@ class _MessageLimitNotice extends StatelessWidget {
       top: false,
       child: Container(
         color: Colors.white,
-        padding: const EdgeInsets.fromLTRB(
-          14,
-          10,
-          14,
-          10,
-        ),
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -6689,14 +5933,12 @@ class _MessageLimitNotice extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,
-                  child: Icon(
+                  child: AppIcon(
                     pending
                         ? Icons.schedule_rounded
                         : Icons.info_outline_rounded,
                     size: 16,
-                    color: pending
-                        ? AppColors.brand
-                        : AppColors.textSecondary,
+                    color: pending ? AppColors.brand : AppColors.textSecondary,
                   ),
                 ),
 
@@ -6708,9 +5950,7 @@ class _MessageLimitNotice extends StatelessWidget {
                     style: GoogleFonts.outfit(
                       fontSize: 11.5,
                       height: 1.4,
-                      fontWeight: pending
-                          ? FontWeight.w500
-                          : FontWeight.w400,
+                      fontWeight: pending ? FontWeight.w500 : FontWeight.w400,
                       color: pending
                           ? AppColors.textPrimary
                           : AppColors.textSecondary,
@@ -6733,10 +5973,8 @@ class _MessageLimitNotice extends StatelessWidget {
                     elevation: 0,
                     backgroundColor: const Color(0xFFF2F4F6),
                     foregroundColor: AppColors.textPrimary,
-                    disabledBackgroundColor:
-                        const Color(0xFFF2F4F6),
-                    disabledForegroundColor:
-                        AppColors.textSecondary,
+                    disabledBackgroundColor: const Color(0xFFF2F4F6),
+                    disabledForegroundColor: AppColors.textSecondary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(11),
                     ),
@@ -6797,44 +6035,28 @@ class _ClosedNotice extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        width:
-            double.infinity,
-        color:
-            Colors.white,
-        padding:
-            const EdgeInsets.fromLTRB(
-          20,
-          14,
-          20,
-          14,
-        ),
+        width: double.infinity,
+        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
         child: Row(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons
-                  .lock_outline_rounded,
+            AppIcon(
+              Icons.lock_outline_rounded,
               size: 15,
-              color:
-                  AppColors.textSecondary,
+              color: AppColors.textSecondary,
             ),
 
-            const SizedBox(
-              width: 7,
-            ),
+            const SizedBox(width: 7),
 
             Flexible(
               child: Text(
                 message ??
                     'This consultation has ended. Messages are now read-only.',
-                textAlign:
-                    TextAlign.center,
-                style:
-                    GoogleFonts.outfit(
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
                   fontSize: 11.5,
-                  color: AppColors
-                      .textSecondary,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ),
@@ -6863,44 +6085,26 @@ class _ReceiptRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Text(
             label,
-            style:
-                GoogleFonts.outfit(
+            style: GoogleFonts.outfit(
               fontSize: 12,
-              color: AppColors
-                  .textSecondary,
+              color: AppColors.textSecondary,
             ),
           ),
         ),
 
-        const SizedBox(
-          width: 14,
-        ),
+        const SizedBox(width: 14),
 
         Text(
           value,
-          style:
-              GoogleFonts.outfit(
-            fontSize:
-                emphasized
-                    ? 14
-                    : 12.5,
-            fontWeight:
-                emphasized
-                    ? FontWeight.w500
-                    : FontWeight.w500,
-            color:
-                emphasized
-                    ? const Color(
-                        0xFF16894A,
-                      )
-                    : AppColors
-                        .textPrimary,
+          style: GoogleFonts.outfit(
+            fontSize: emphasized ? 14 : 12.5,
+            fontWeight: emphasized ? FontWeight.w500 : FontWeight.w500,
+            color: emphasized ? const Color(0xFF16894A) : AppColors.textPrimary,
           ),
         ),
       ],
@@ -6930,10 +6134,7 @@ class _LoadingView extends StatelessWidget {
 // =============================================================================
 
 class _ErrorView extends StatelessWidget {
-  const _ErrorView({
-    required this.message,
-    required this.retry,
-  });
+  const _ErrorView({required this.message, required this.retry});
 
   final String message;
   final VoidCallback retry;
@@ -6942,88 +6143,59 @@ class _ErrorView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding:
-            const EdgeInsets.symmetric(
-          horizontal: 36,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 36),
         child: Column(
-          mainAxisSize:
-              MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               width: 60,
               height: 60,
-              decoration:
-                  const BoxDecoration(
-                color:
-                    Color(
-                  0xFFF0F2F4,
-                ),
-                shape:
-                    BoxShape.circle,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF0F2F4),
+                shape: BoxShape.circle,
               ),
-              alignment:
-                  Alignment.center,
-              child: Icon(
-                Icons
-                    .chat_bubble_outline_rounded,
+              alignment: Alignment.center,
+              child: AppIcon(
+                Icons.chat_bubble_outline_rounded,
                 size: 24,
-                color: AppColors
-                    .textSecondary,
+                color: AppColors.textSecondary,
               ),
             ),
 
-            const SizedBox(
-              height: 16,
-            ),
+            const SizedBox(height: 16),
 
             Text(
               'Unable to open chat',
-              textAlign:
-                  TextAlign.center,
-              style:
-                  GoogleFonts.outfit(
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
                 fontSize: 16,
-                fontWeight:
-                    FontWeight.w500,
-                color:
-                    AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
               ),
             ),
 
-            const SizedBox(
-              height: 7,
-            ),
+            const SizedBox(height: 7),
 
             Text(
               message,
-              textAlign:
-                  TextAlign.center,
-              style:
-                  GoogleFonts.outfit(
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
                 fontSize: 12.5,
                 height: 1.5,
-                color: AppColors
-                    .textSecondary,
+                color: AppColors.textSecondary,
               ),
             ),
 
-            const SizedBox(
-              height: 17,
-            ),
+            const SizedBox(height: 17),
 
             TextButton(
-              onPressed:
-                  retry,
+              onPressed: retry,
               child: Text(
                 'Try again',
-                style:
-                    GoogleFonts.outfit(
+                style: GoogleFonts.outfit(
                   fontSize: 13,
-                  fontWeight:
-                      FontWeight.w500,
-                  color:
-                      AppColors.brand,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.brand,
                 ),
               ),
             ),

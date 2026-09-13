@@ -2,6 +2,7 @@ import 'package:darmaan/core/models/user_model.dart';
 import 'package:darmaan/core/theme/app_colors.dart';
 import 'package:darmaan/core/utils/account_deletion_request.dart';
 import 'package:flutter/material.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -146,7 +147,7 @@ class AccountScreen extends StatelessWidget {
                             color: const Color(0xFFF1F3F5),
                             borderRadius: BorderRadius.circular(11),
                           ),
-                          child: const Icon(
+                          child: const AppIcon(
                             Icons.logout_rounded,
                             color: Color(0xFF344054),
                             size: 19,
@@ -185,7 +186,7 @@ class AccountScreen extends StatelessWidget {
                             ),
                           )
                         else
-                          Icon(
+                          AppIcon(
                             Icons.chevron_right_rounded,
                             size: 20,
                             color: AppColors.textSecondary.withValues(
@@ -235,7 +236,7 @@ class AccountScreen extends StatelessWidget {
                             color: const Color(0xFFFFF0EE),
                             borderRadius: BorderRadius.circular(11),
                           ),
-                          child: const Icon(
+                          child: const AppIcon(
                             Icons.delete_outline_rounded,
                             color: Color(0xFFB42318),
                             size: 19,
@@ -265,7 +266,7 @@ class AccountScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        Icon(
+                        AppIcon(
                           Icons.chevron_right_rounded,
                           size: 20,
                           color: AppColors.textSecondary.withValues(alpha: 0.55),
@@ -338,7 +339,7 @@ class _LegalLinkButton extends StatelessWidget {
                     color: const Color(0xFFF1F3F5),
                     borderRadius: BorderRadius.circular(11),
                   ),
-                  child: Icon(icon, color: const Color(0xFF344054), size: 19),
+                  child: AppIcon(icon, color: const Color(0xFF344054), size: 19),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -364,7 +365,7 @@ class _LegalLinkButton extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(
+                AppIcon(
                   Icons.open_in_new_rounded,
                   size: 18,
                   color: AppColors.textSecondary.withValues(alpha: 0.55),

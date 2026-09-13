@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:darmaan/core/models/consultation_completion_model.dart';
 import 'package:darmaan/presentation/home/chat/chat_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -149,7 +150,7 @@ class _PatientCompletionCoordinatorState
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    const AppIcon(
                       Icons.chat_bubble_outline_rounded,
                       size: 18,
                       color: Color(0xFF1570EF),
@@ -293,7 +294,7 @@ class _PatientCompletionCoordinatorState
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: const Color(0xFFFFF7E0),
-                  child: const Icon(
+                  child: const AppIcon(
                     Icons.star_rounded,
                     color: Color(0xFFF5A623),
                     size: 30,
@@ -332,7 +333,7 @@ class _PatientCompletionCoordinatorState
                           : () => setDialogState(() => rating = value),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 3),
-                        child: Icon(
+                        child: AppIcon(
                           filled
                               ? Icons.star_rounded
                               : Icons.star_border_rounded,
@@ -498,7 +499,7 @@ class _AppDialog extends StatelessWidget {
             CircleAvatar(
               radius: 30,
               backgroundColor: iconBackgroundColor,
-              child: Icon(icon, color: iconColor, size: 30),
+              child: AppIcon(icon, color: iconColor, size: 30),
             ),
             const SizedBox(height: 18),
             Text(

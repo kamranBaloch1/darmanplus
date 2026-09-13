@@ -137,7 +137,7 @@ class _WalletTransactionsScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7F9),
+      backgroundColor:  Colors.white,
 
       appBar: AppBar(
         automaticallyImplyLeading: !widget.embedded,

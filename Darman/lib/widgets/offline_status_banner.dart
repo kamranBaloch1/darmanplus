@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 
 class OfflineStatusBanner extends StatefulWidget {
   const OfflineStatusBanner({super.key, required this.child});
@@ -119,7 +120,7 @@ class _OfflineStatusBannerState extends State<OfflineStatusBanner> {
                               color: Colors.white.withValues(alpha: 0.13),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Icon(
+                            child: AppIcon(
                               _offline
                                   ? Icons.wifi_off_rounded
                                   : Icons.wifi_rounded,
@@ -164,7 +165,7 @@ class _OfflineStatusBannerState extends State<OfflineStatusBanner> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Icon(
+                          AppIcon(
                             _offline
                                 ? Icons.info_outline_rounded
                                 : Icons.check_circle_outline_rounded,

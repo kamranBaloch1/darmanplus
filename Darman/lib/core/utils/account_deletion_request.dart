@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -13,7 +14,7 @@ Future<void> requestAccountDeletion(
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      icon: const Icon(
+      icon: const AppIcon(
         Icons.delete_outline_rounded,
         color: Color(0xFFB42318),
       ),
