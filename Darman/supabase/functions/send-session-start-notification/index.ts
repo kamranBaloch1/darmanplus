@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { GoogleAuth } from "npm:google-auth-library@9";
+import { sendPushToUser } from "../_shared/push.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -106,87 +106,26 @@ Deno.serve(async (request) => {
       }
     }
 
-    const { data: devices, error: tokenError } = await admin
-      .from("push_notification_tokens")
-      .select("token")
-      .eq("user_id", recipientId);
-    if (tokenError) throw tokenError;
-    if (!devices?.length) {
-      return Response.json(
-        { sent: 0, message: "Recipient has no registered device" },
-        { headers: corsHeaders },
-      );
-    }
-
-    const credentialsJson = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
-    if (!credentialsJson) throw new Error("Firebase is not configured");
-    const credentials = JSON.parse(credentialsJson);
-    const googleAuth = new GoogleAuth({
-      credentials,
-      scopes: ["https://www.googleapis.com/auth/firebase.messaging"],
+    const result = await sendPushToUser({
+      admin,
+      userId: recipientId,
+      title,
+      body: notificationBody,
+      data: {
+        type: notificationType,
+        booking_id: booking.id,
+        doctor_id: booking.doctor_id,
+        patient_id: booking.patient_id,
+        doctor_name: doctorName,
+        patient_name: patientName,
+      },
     });
-    const authClient = await googleAuth.getClient();
-    const accessTokenResult = await authClient.getAccessToken();
-    const accessToken = typeof accessTokenResult === "string"
-      ? accessTokenResult
-      : accessTokenResult.token;
-    if (!accessToken) throw new Error("Firebase authorization failed");
-
-    const endpoint =
-      `https://fcm.googleapis.com/v1/projects/${credentials.project_id}/messages:send`;
-    const results = await Promise.all(devices.map(async ({ token }) => {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: {
-            token,
-            notification: { title, body: notificationBody },
-            data: {
-              type: notificationType,
-              booking_id: booking.id,
-              doctor_id: booking.doctor_id,
-              patient_id: booking.patient_id,
-              doctor_name: doctorName,
-              patient_name: patientName,
-            },
-            android: {
-              priority: "HIGH",
-              ttl: "3600s",
-              notification: {
-                channel_id: "consultation_requests",
-                sound: "default",
-                visibility: "PRIVATE",
-                notification_priority: "PRIORITY_HIGH",
-                default_vibrate_timings: true,
-              },
-            },
-            apns: {
-              headers: { "apns-priority": "10" },
-              payload: { aps: { sound: "default", badge: 1 } },
-            },
-          },
-        }),
-      });
-
-      if (response.ok) return { sent: true };
-      const errorBody = await response.text();
-      if (errorBody.includes("UNREGISTERED")) {
-        await admin.from("push_notification_tokens").delete().eq(
-          "token",
-          token,
-        );
-      }
-      return { sent: false, error: errorBody };
-    }));
 
     return Response.json(
       {
-        sent: results.filter((result) => result.sent).length,
-        attempted: results.length,
+        sent: result.sent,
+        attempted: result.attempted,
+        message: result.message,
         event,
       },
       { headers: corsHeaders },

@@ -14,6 +14,7 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:darmaan/widgets/app_shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 
 class PatientProfileScreen extends StatefulWidget {
@@ -109,6 +110,23 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     );
   }
 
+  Future<void> _openWhatsAppSupport() async {
+    const phoneNumber = '923335540708';
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final opened = await launchUrl(
+        Uri.parse('https://wa.me/$phoneNumber'),
+        mode: LaunchMode.externalApplication,
+      );
+      if (opened) return;
+    } catch (_) {}
+    if (mounted) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Unable to open WhatsApp.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -151,6 +169,12 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                         title: 'Consultation history',
                         subtitle: 'Completed and cancelled appointments',
                         onTap: _openHistory,
+                      ),
+                      _ActionTile(
+                        icon: Icons.support_agent_rounded,
+                        title: 'Customer support',
+                        subtitle: 'Chat with Darman on WhatsApp',
+                        onTap: _openWhatsAppSupport,
                       ),
                       _ActionTile(
                         icon: Icons.manage_accounts_outlined,

@@ -193,7 +193,7 @@ class _PatientProfileSetupScreenState extends State<PatientProfileSetupScreen> {
                           Text(
                             'Complete your profile',
                             style: GoogleFonts.outfit(
-                              fontSize: 25,
+                              fontSize: 22,
                               fontWeight: FontWeight.w500,
                               letterSpacing: -.5,
                               color: AppColors.textPrimary,

@@ -5,6 +5,7 @@ import 'package:darmaan/core/theme/app_colors.dart';
 import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:darmaan/presentation/home/chat/chat_room.dart';
 import 'package:darmaan/presentation/home/doctor/repository/doctor_appointments_repository.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:darmaan/widgets/app_shimmer.dart';
 import 'package:darmaan/widgets/unread_message_badge.dart';
 import 'package:flutter/material.dart';
@@ -180,7 +181,6 @@ class _FollowUpPageHeader extends StatelessWidget {
     );
   }
 }
-
 class _FollowUpCard extends StatelessWidget {
   const _FollowUpCard({
     required this.booking,
@@ -206,43 +206,46 @@ class _FollowUpCard extends StatelessWidget {
         : const Color(0xFFFFF0E5);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF101828).withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 5),
-          ),
-        ],
+      padding: const EdgeInsets.fromLTRB(13, 13, 13, 12),
+  decoration: BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(16),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.05),
+        blurRadius: 14,
+        offset: const Offset(0, 5),
       ),
+    ],
+  ),
       child: Column(
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               CircleAvatar(
-                radius: 24,
+                radius: 21,
                 backgroundColor: const Color(0xFFF1F5FA),
                 backgroundImage: hasImage
                     ? CachedNetworkImageProvider(image!)
                     : null,
                 child: hasImage
                     ? null
-                    : const Icon(
+                    : AppIcon(
                         Icons.person_rounded,
+                        size: 20,
                         color: AppColors.brand,
-                        size: 22,
                       ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 11),
+              // Name, status pill, and date all share one column so their
+              // left edges line up automatically.
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: Text(
@@ -252,8 +255,7 @@ class _FollowUpCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.outfit(
-                              fontSize: 14.5,
-                              letterSpacing: -0.2,
+                              fontSize: 15.5,
                               fontWeight: FontWeight.w500,
                               color: const Color(0xFF102047),
                             ),
@@ -284,7 +286,7 @@ class _FollowUpCard extends StatelessWidget {
                               Text(
                                 status,
                                 style: GoogleFonts.outfit(
-                                  fontSize: 8.5,
+                                  fontSize: 9,
                                   fontWeight: FontWeight.w500,
                                   color: statusColor,
                                 ),
@@ -294,16 +296,16 @@ class _FollowUpCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(
+                        AppIcon(
                           Icons.calendar_month_rounded,
-                          size: 12,
+                          size: 13,
                           color: const Color(0xFF8490A2),
                         ),
                         const SizedBox(width: 5),
-                        Flexible(
+                        Expanded(
                           child: Text(
                             DateFormat(
                               'dd MMMM yyyy',
@@ -311,8 +313,7 @@ class _FollowUpCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.outfit(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 11.5,
                               color: const Color(0xFF8490A2),
                             ),
                           ),
@@ -324,15 +325,15 @@ class _FollowUpCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 13),
+          const SizedBox(height: 11),
           const Divider(height: 1, color: Color(0xFFE8EDF3)),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Material(
             color: const Color(0xFFF1F6FF),
-            borderRadius: BorderRadius.circular(13),
+            borderRadius: BorderRadius.circular(12),
             child: InkWell(
               onTap: onMessage,
-              borderRadius: BorderRadius.circular(13),
+              borderRadius: BorderRadius.circular(12),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -343,13 +344,13 @@ class _FollowUpCard extends StatelessWidget {
                     UnreadMessageBadge(
                       bookingId: booking.id,
                       isDoctor: true,
-                      child: const Icon(
+                      child: AppIcon(
                         Icons.forum_outlined,
                         color: AppColors.brand,
-                        size: 19,
+                        size: 18,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 9),
                     Expanded(
                       child: Text(
                         'Open conversation',
@@ -360,10 +361,10 @@ class _FollowUpCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const Icon(
+                    AppIcon(
                       Icons.chevron_right_rounded,
                       color: AppColors.brand,
-                      size: 21,
+                      size: 19,
                     ),
                   ],
                 ),
@@ -376,7 +377,6 @@ class _FollowUpCard extends StatelessWidget {
   }
 }
 
-
 class _EmptyState extends StatelessWidget {
   const _EmptyState();
 
@@ -386,10 +386,10 @@ class _EmptyState extends StatelessWidget {
       padding: const EdgeInsets.only(top: 64),
       child: Column(
         children: [
-          const Icon(
+          AppIcon(
             Icons.event_repeat_rounded,
             size: 46,
-            color: Color(0xFF98A2B3),
+            color: const Color(0xFF98A2B3),
           ),
           const SizedBox(height: 16),
           Text(

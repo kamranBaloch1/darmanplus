@@ -8,6 +8,7 @@ import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:darmaan/presentation/home/chat/chat_repository.dart';
 import 'package:darmaan/presentation/home/chat/chat_room.dart';
 import 'package:darmaan/presentation/home/video_call/video_call_repository.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -934,7 +935,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                     ),
                     if (widget.peerVerified) ...[
                       const SizedBox(width: 5),
-                      const Icon(
+                      const AppIcon(
                         Icons.verified_rounded,
                         size: 16,
                         color: Color(0xFF64B5F6),
@@ -946,7 +947,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                 Row(
                   children: [
                     if (_remoteAudioMuted) ...[
-                      const Icon(
+                      const AppIcon(
                         Icons.mic_off_rounded,
                         size: 13,
                         color: Colors.white70,
@@ -1049,7 +1050,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       return Container(
         color: const Color(0xFF263139),
         alignment: Alignment.center,
-        child: const Icon(
+        child: const AppIcon(
           Icons.videocam_off_rounded,
           color: Colors.white70,
           size: 30,
@@ -1228,7 +1229,7 @@ class _PeerPlaceholder extends StatelessWidget {
                     ),
                     const SizedBox(width: 9),
                   ] else ...[
-                    const Icon(
+                    const AppIcon(
                       Icons.videocam_off_rounded,
                       color: Colors.white60,
                       size: 18,
@@ -1283,7 +1284,7 @@ class _ConnectionPill extends StatelessWidget {
               ),
             )
           else
-            const Icon(
+            const AppIcon(
               Icons.signal_wifi_statusbar_connected_no_internet_4_rounded,
               size: 16,
               color: Colors.white,
@@ -1322,7 +1323,7 @@ class _TopButton extends StatelessWidget {
       child: IconButton(
         tooltip: tooltip,
         onPressed: onTap,
-        icon: Icon(icon, color: Colors.white, size: 22),
+        icon: AppIcon(icon, color: Colors.white, size: 22),
       ),
     );
   }
@@ -1377,7 +1378,7 @@ class _CallControl extends StatelessWidget {
                   ),
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 160),
-                    child: Icon(
+                    child: AppIcon(
                       icon,
                       key: ValueKey(icon),
                       color: foreground,
@@ -1472,7 +1473,7 @@ class _CallErrorState extends StatelessWidget {
                   foregroundColor: const Color(0xFF071C13),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                icon: Icon(
+                icon: AppIcon(
                   permissionDenied
                       ? Icons.settings_rounded
                       : Icons.refresh_rounded,

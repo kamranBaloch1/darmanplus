@@ -4,6 +4,7 @@ import 'package:darmaan/core/models/video_call_invite.dart';
 import 'package:darmaan/core/helpers/push_notification_service.dart';
 import 'package:darmaan/presentation/home/video_call/video_call_invite_repository.dart';
 import 'package:darmaan/presentation/home/video_call/video_call_screen.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -260,7 +261,7 @@ class _IncomingVideoCallScreenState extends State<IncomingVideoCallScreen> {
                             : null,
                     child: _callerProfile?.photoUrl?.trim().isNotEmpty == true
                         ? null
-                        : const Icon(
+                        : const AppIcon(
                             Icons.person,
                             size: 62,
                             color: Colors.white70,
@@ -290,7 +291,7 @@ class _IncomingVideoCallScreenState extends State<IncomingVideoCallScreen> {
                     ),
                     if (_callerProfile?.verified == true) ...[
                       const SizedBox(width: 6),
-                      const Icon(
+                      const AppIcon(
                         Icons.verified_rounded,
                         size: 21,
                         color: Color(0xFFBBDEFB),
@@ -376,7 +377,7 @@ class _CallAction extends StatelessWidget {
         child: IconButton(
           tooltip: label,
           onPressed: onTap,
-          icon: Icon(icon, color: Colors.white, size: 30),
+          icon: AppIcon(icon, color: Colors.white, size: 30),
         ),
       ),
       const SizedBox(height: 8),

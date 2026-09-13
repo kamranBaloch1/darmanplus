@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:darmaan/core/models/wallet_top_up_model.dart';
 import 'package:darmaan/core/theme/app_colors.dart';
+import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:darmaan/presentation/home/wallet/repository/wallet_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -256,8 +257,7 @@ class _AddMoneyScreenState extends State<AddMoneyScreen>
   }
 
   String _message(Object error) {
-    if (error is WalletException) return error.message;
-    return error.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+    return AppErrorMessage.from(error);
   }
 
   @override

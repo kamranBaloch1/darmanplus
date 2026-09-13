@@ -7,7 +7,6 @@ import 'package:darmaan/presentation/home/doctor/screens/doctor_profile_screen.d
 import 'package:darmaan/presentation/home/wallet/screens/wallet_transactions_screen.dart';
 import 'package:darmaan/widgets/app_bottom_nav_bar.dart';
 import 'package:darmaan/widgets/complete_doctor_profile_dialog.dart';
-import 'package:darmaan/widgets/app_shimmer.dart';
 import 'package:darmaan/presentation/home/doctor/repository/doctor_profile_repository.dart';
 import 'package:flutter/material.dart';
 
@@ -186,12 +185,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_checkingProfile) {
-      return const Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(child: AppProfileShimmer()),
-      );
-    }
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -223,7 +216,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         items: _navItems,
         currentIndex: _currentIndex,
         onTap: (index) {
-          if (!_profileComplete && index != 3) {
+          if (!_checkingProfile && !_profileComplete && index != 3) {
             setState(() => _currentIndex = 3);
             _showCompletionDialog();
             return;

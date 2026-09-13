@@ -59,6 +59,10 @@ class PushNotificationService {
   // Android notification-channel sounds are immutable after the channel is
   // first created. Keep this versioned whenever the call sound changes.
   static const String _incomingCallChannelId = 'incoming_calls_v3';
+  static const String _consultationChannelId = 'consultation_requests_v2';
+  static const String _chatChannelId = 'chat_messages_v2';
+  static const AndroidNotificationSound _customNotificationSound =
+      RawResourceAndroidNotificationSound('darman_notification');
   static const AndroidNotificationSound _systemRingtone =
       UriAndroidNotificationSound('content://settings/system/ringtone');
 
@@ -355,19 +359,21 @@ class PushNotificationService {
     }
 
     const consultationChannel = AndroidNotificationChannel(
-      'consultation_requests',
+      _consultationChannelId,
       'Consultation updates',
       description: 'Consultation requests, responses and status updates',
       importance: Importance.high,
       playSound: true,
+      sound: _customNotificationSound,
       enableVibration: true,
     );
     const chatChannel = AndroidNotificationChannel(
-      'chat_messages',
+      _chatChannelId,
       'Consultation messages',
       description: 'New messages from your doctor or patient',
       importance: Importance.high,
       playSound: true,
+      sound: _customNotificationSound,
       enableVibration: true,
     );
     const activeConsultationChannel = AndroidNotificationChannel(
@@ -636,7 +642,7 @@ class PushNotificationService {
     }
     final isChatMessage = type == 'chat_message';
     final channelId =
-        isChatMessage ? 'chat_messages' : 'consultation_requests';
+        isChatMessage ? _chatChannelId : _consultationChannelId;
     final channelName =
         isChatMessage ? 'Consultation messages' : 'Consultation updates';
 
@@ -657,6 +663,7 @@ class PushNotificationService {
       importance: Importance.high,
       priority: Priority.high,
       playSound: true,
+      sound: _customNotificationSound,
       enableVibration: true,
       visibility: NotificationVisibility.private,
     ),
@@ -664,6 +671,7 @@ class PushNotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      sound: 'darman_notification.caf',
     ),
   ),
   payload: jsonEncode(message.data),

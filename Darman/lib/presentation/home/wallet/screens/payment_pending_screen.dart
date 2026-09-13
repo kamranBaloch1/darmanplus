@@ -47,7 +47,7 @@ class PaymentPendingScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 22,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: -0.3,
                   color: accent,
                 ),
@@ -170,7 +170,7 @@ class PaymentPendingScreen extends StatelessWidget {
                     'Back to Wallet',
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),

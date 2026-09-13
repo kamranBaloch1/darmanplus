@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { GoogleAuth } from "npm:google-auth-library@9";
+import { sendPushToUser } from "../_shared/push.ts";
 
 type DueFollowUp = {
   booking_id: string;
@@ -46,22 +46,6 @@ Deno.serve(async (request) => {
       return Response.json({ processed: 0, patient_sent: 0, doctor_sent: 0 });
     }
 
-    const credentialsJson = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
-    if (!credentialsJson) throw new Error("Firebase is not configured");
-    const credentials = JSON.parse(credentialsJson);
-    const googleAuth = new GoogleAuth({
-      credentials,
-      scopes: ["https://www.googleapis.com/auth/firebase.messaging"],
-    });
-    const authClient = await googleAuth.getClient();
-    const accessTokenResult = await authClient.getAccessToken();
-    const accessToken = typeof accessTokenResult === "string"
-      ? accessTokenResult
-      : accessTokenResult.token;
-    if (!accessToken) throw new Error("Firebase authorization failed");
-
-    const endpoint =
-      `https://fcm.googleapis.com/v1/projects/${credentials.project_id}/messages:send`;
     let patientSentCount = 0;
     let doctorSentCount = 0;
 
@@ -101,8 +85,6 @@ Deno.serve(async (request) => {
         for (const recipient of recipients) {
           const sent = await sendToUser({
             admin,
-            endpoint,
-            accessToken,
             followUp,
             recipient,
             doctorName,
@@ -144,78 +126,34 @@ Deno.serve(async (request) => {
 
 async function sendToUser({
   admin,
-  endpoint,
-  accessToken,
   followUp,
   recipient,
   doctorName,
   patientName,
 }: {
   admin: ReturnType<typeof createClient>;
-  endpoint: string;
-  accessToken: string;
   followUp: DueFollowUp;
   recipient: Recipient;
   doctorName: string;
   patientName: string;
 }): Promise<boolean> {
-  const { data: devices, error } = await admin
-    .from("push_notification_tokens")
-    .select("token")
-    .eq("user_id", recipient.userId);
-  if (error) throw error;
-  if (!devices?.length) return false;
+  const result = await sendPushToUser({
+    admin,
+    userId: recipient.userId,
+    title: recipient.title,
+    body: recipient.body,
+    ttl: "86400s",
+    data: {
+      type: "consultation_follow_up_due",
+      recipient_type: recipient.type,
+      booking_id: followUp.booking_id,
+      doctor_id: followUp.doctor_id,
+      patient_id: followUp.patient_id,
+      doctor_name: doctorName,
+      patient_name: patientName,
+      follow_up_date: followUp.follow_up_date,
+    },
+  });
 
-  const results = await Promise.all(devices.map(async ({ token }) => {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: {
-          token,
-          notification: { title: recipient.title, body: recipient.body },
-          data: {
-            type: "consultation_follow_up_due",
-            recipient_type: recipient.type,
-            booking_id: followUp.booking_id,
-            doctor_id: followUp.doctor_id,
-            patient_id: followUp.patient_id,
-            doctor_name: doctorName,
-            patient_name: patientName,
-            follow_up_date: followUp.follow_up_date,
-          },
-          android: {
-            priority: "HIGH",
-            ttl: "86400s",
-            notification: {
-              channel_id: "consultation_requests",
-              sound: "default",
-              visibility: "PRIVATE",
-              notification_priority: "PRIORITY_HIGH",
-              default_vibrate_timings: true,
-            },
-          },
-          apns: {
-            headers: { "apns-priority": "10" },
-            payload: { aps: { sound: "default", badge: 1 } },
-          },
-        },
-      }),
-    });
-
-    if (response.ok) return true;
-    const errorBody = await response.text();
-    if (errorBody.includes("UNREGISTERED")) {
-      await admin.from("push_notification_tokens").delete().eq(
-        "token",
-        token,
-      );
-    }
-    return false;
-  }));
-
-  return results.some(Boolean);
+  return result.sent > 0;
 }

@@ -142,7 +142,7 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                       children: [
                         Container(
                           margin: const EdgeInsets.only(top: 26),
-                          padding: const EdgeInsets.fromLTRB(20, 34, 20, 20),
+                          // padding: const EdgeInsets.fromLTRB(20, 34, 20, 20),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(24),
@@ -160,15 +160,15 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                                 borderRadius: BorderRadius.circular(14),
                                 child: Image.asset(
                                   qrAsset,
-                                  width: 220,
-                                  height: 220,
+                                  width: 200,
+                                  height: 200,
                                   fit: BoxFit.contain,
                                   filterQuality: FilterQuality.high,
                                   isAntiAlias: true,
                                   errorBuilder: (_, __, ___) {
                                     return const SizedBox(
-                                      width: 220,
-                                      height: 220,
+                                      width: 200,
+                                      height: 200,
                                       child: Center(
                                         child: Icon(
                                           Icons.qr_code_2_rounded,

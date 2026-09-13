@@ -12,6 +12,7 @@ import 'package:darmaan/presentation/home/doctor/screens/edit_doctor_profile_scr
 import 'package:darmaan/presentation/home/doctor/screens/doctor_appointments_screen.dart';
 import 'package:darmaan/presentation/home/patient/screens/doctor_reviews_screen.dart';
 import 'package:darmaan/widgets/app_shimmer.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -122,6 +123,23 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     );
   }
 
+  Future<void> _openWhatsAppSupport() async {
+    const phoneNumber = '923335540708';
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final opened = await launchUrl(
+        Uri.parse('https://wa.me/$phoneNumber'),
+        mode: LaunchMode.externalApplication,
+      );
+      if (opened) return;
+    } catch (_) {}
+    if (mounted) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Unable to open WhatsApp.')),
+      );
+    }
+  }
+
   void _showProfilePhoto(String imageUrl) {
     showDialog<void>(
       context: context,
@@ -145,7 +163,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                     errorWidget: (_, _, _) => const SizedBox(
                       width: 240,
                       height: 240,
-                      child: Icon(
+                      child: AppIcon(
                         Icons.broken_image_outlined,
                         color: Colors.white70,
                         size: 44,
@@ -161,7 +179,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                 backgroundColor: Colors.black54,
                 foregroundColor: Colors.white,
               ),
-              icon: const Icon(Icons.close_rounded),
+              icon: const AppIcon(Icons.close_rounded),
             ),
           ],
         ),
@@ -172,6 +190,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   void _openIntroVideo(String url) {
     showDialog(
       context: context,
+      barrierDismissible: false,
       barrierColor: Colors.black.withValues(alpha: 0.88),
       builder: (_) => _VideoPlayerDialog(videoUrl: url),
     );
@@ -255,7 +274,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   shape: BoxShape.circle,
                   border: Border.all(color: const Color(0xFFE6E9ED)),
                 ),
-                child: const Icon(
+                child: const AppIcon(
                   Icons.logout_rounded,
                   color: Color(0xFF344054),
                   size: 27,
@@ -384,7 +403,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                AppIcon(
                   Icons.wifi_off_rounded,
                   size: 32.sp,
                   color: Colors.grey.shade400,
@@ -451,7 +470,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       backgroundColor: Colors.white,
                       foregroundColor: AppColors.textPrimary,
                     ),
-                    icon: Icon(Icons.edit_rounded, size: 18.sp),
+                    icon: AppIcon(Icons.edit_rounded, size: 18.sp),
                   ),
                 ),
               ),
@@ -489,7 +508,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                 : null,
                           ),
                           child: user.profileImage == null
-                              ? Icon(
+                              ? AppIcon(
                                   Icons.person_rounded,
                                   size: 36.sp,
                                   color: AppColors.brand,
@@ -527,7 +546,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         ),
                         if (user.isDoctorVerified) ...[
                           SizedBox(width: 5.w),
-                          Icon(
+                          AppIcon(
                             Icons.verified_rounded,
                             size: 16.sp,
                             color: AppColors.brand,
@@ -560,7 +579,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
+                            AppIcon(
                               Icons.phone_outlined,
                               size: 13.sp,
                               color: AppColors.textSecondary,
@@ -575,7 +594,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                               ),
                             ),
                             SizedBox(width: 5.w),
-                            Icon(
+                            AppIcon(
                               Icons.verified_rounded,
                               size: 13.sp,
                               color: AppColors.brand,
@@ -616,7 +635,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                             children: [
                               Row(
                                 children: [
-                                  Icon(
+                                  AppIcon(
                                     isComplete
                                         ? Icons.task_alt_rounded
                                         : Icons.pending_actions_rounded,
@@ -771,7 +790,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                   color: AppColors.brand,
                                   shape: BoxShape.circle,
                                 ),
-                                child: Icon(
+                                child: AppIcon(
                                   Icons.play_arrow_rounded,
                                   size: 19.sp,
                                   color: Colors.white,
@@ -801,7 +820,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                   color: const Color(0xFFFFF7DF),
                                   borderRadius: BorderRadius.circular(12.r),
                                 ),
-                                child: Icon(
+                                child: AppIcon(
                                   Icons.star_rounded,
                                   color: const Color(0xFFFFB300),
                                   size: 21.sp,
@@ -818,7 +837,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                   ),
                                 ),
                               ),
-                              Icon(
+                              AppIcon(
                                 Icons.chevron_right_rounded,
                                 color: Colors.grey.shade400,
                                 size: 20.sp,
@@ -847,7 +866,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                   color: const Color(0xFFEAF3FF),
                                   borderRadius: BorderRadius.circular(12.r),
                                 ),
-                                child: Icon(
+                                child: AppIcon(
                                   Icons.history_rounded,
                                   color: AppColors.brand,
                                   size: 21.sp,
@@ -877,7 +896,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                   ],
                                 ),
                               ),
-                              Icon(
+                              AppIcon(
                                 Icons.chevron_right_rounded,
                                 color: Colors.grey.shade400,
                                 size: 20.sp,
@@ -940,7 +959,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                               10.r,
                                             ),
                                           ),
-                                          child: Icon(
+                                          child: AppIcon(
                                             Icons.picture_as_pdf_rounded,
                                             color: const Color(0xFFEF4444),
                                             size: 16.sp,
@@ -957,7 +976,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                             ),
                                           ),
                                         ),
-                                        Icon(
+                                        AppIcon(
                                           user.isDoctorVerified
                                               ? Icons.verified_rounded
                                               : Icons.hourglass_top_rounded,
@@ -967,7 +986,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                               : const Color(0xFFF59E0B),
                                         ),
                                         SizedBox(width: 8.w),
-                                        Icon(
+                                        AppIcon(
                                           Icons.chevron_right_rounded,
                                           size: 18.sp,
                                           color: Colors.grey.shade400,
@@ -981,6 +1000,10 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         ],
                       ),
                     ),
+
+                    SizedBox(height: 12.h),
+
+                    _buildSupportCard(),
 
                     SizedBox(height: 12.h),
 
@@ -1014,7 +1037,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   color: const Color(0xFFF1F4F7),
                   borderRadius: BorderRadius.circular(11.r),
                 ),
-                child: const Icon(
+                child: const AppIcon(
                   Icons.manage_accounts_outlined,
                   color: AppColors.textSecondary,
                   size: 19,
@@ -1044,9 +1067,68 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   ],
                 ),
               ),
-              Icon(
+              AppIcon(
                 Icons.chevron_right_rounded,
                 size: 20.sp,
+                color: Colors.grey.shade400,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSupportCard() {
+    return _Card(
+      padding: EdgeInsets.zero,
+      child: InkWell(
+        onTap: _openWhatsAppSupport,
+        borderRadius: BorderRadius.circular(18.r),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 15.h),
+          child: Row(
+            children: [
+              Container(
+                width: 38.w,
+                height: 38.w,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F4F7),
+                  borderRadius: BorderRadius.circular(11.r),
+                ),
+                child: const AppIcon(
+                  Icons.support_agent_rounded,
+                  color: AppColors.textSecondary,
+                  size: 19,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Customer support',
+                      style: GoogleFonts.outfit(
+                        fontSize: 13.5.sp,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      'Chat with Darman on WhatsApp',
+                      style: GoogleFonts.outfit(
+                        fontSize: 10.5.sp,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              AppIcon(
+                Icons.open_in_new_rounded,
+                size: 18.sp,
                 color: Colors.grey.shade400,
               ),
             ],
@@ -1103,7 +1185,7 @@ class _ChecklistChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          AppIcon(
             isDone ? Icons.check_rounded : Icons.circle_outlined,
             size: 12.sp,
             color: isDone ? const Color(0xFF10B981) : Colors.grey.shade400,
@@ -1137,7 +1219,7 @@ class _VideoPlayerDialog extends StatefulWidget {
 }
 
 class _VideoPlayerDialogState extends State<_VideoPlayerDialog> {
-  late final VideoPlayerController _controller;
+  VideoPlayerController? _controller;
   bool _isInitialized = false;
   bool _hasError = false;
   bool _showControls = true;
@@ -1146,31 +1228,57 @@ class _VideoPlayerDialogState extends State<_VideoPlayerDialog> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
-      ..initialize()
-          .then((_) {
-            if (!mounted) return;
-            setState(() => _isInitialized = true);
-            _controller.play();
-            _scheduleHide();
-          })
-          .catchError((_) {
-            if (!mounted) return;
-            setState(() => _hasError = true);
-          });
+    _initialize();
+  }
 
-    _controller.addListener(_onTick);
+  Future<void> _initialize() async {
+    final uri = Uri.tryParse(widget.videoUrl.trim());
+    if (uri == null || !uri.hasScheme) {
+      if (mounted) setState(() => _hasError = true);
+      return;
+    }
+
+    VideoPlayerController? candidate;
+    try {
+      candidate = VideoPlayerController.networkUrl(uri);
+      candidate.addListener(_onTick);
+      await candidate.initialize().timeout(const Duration(seconds: 25));
+      await candidate.play();
+      if (!mounted) {
+        await candidate.dispose();
+        return;
+      }
+      setState(() {
+        _controller = candidate;
+        _isInitialized = true;
+        _hasError = false;
+      });
+      _scheduleHide();
+      candidate = null;
+    } catch (_) {
+      candidate?.removeListener(_onTick);
+      await candidate?.dispose();
+      if (!mounted) return;
+      setState(() => _hasError = true);
+    }
   }
 
   void _onTick() {
+    final controller = _controller;
+    if (controller?.value.hasError == true && !_hasError && mounted) {
+      setState(() => _hasError = true);
+      return;
+    }
     if (mounted) setState(() {});
   }
 
   void _scheduleHide() {
+    final controller = _controller;
+    if (controller == null) return;
     _hideTimer?.cancel();
     _hideTimer = Timer(const Duration(seconds: 3), () {
       if (!mounted) return;
-      if (_controller.value.isPlaying) {
+      if (controller.value.isPlaying) {
         setState(() => _showControls = false);
       }
     });
@@ -1182,12 +1290,14 @@ class _VideoPlayerDialogState extends State<_VideoPlayerDialog> {
   }
 
   void _togglePlay() {
+    final controller = _controller;
+    if (controller == null || !_isInitialized || _hasError) return;
     setState(() {
-      if (_controller.value.isPlaying) {
-        _controller.pause();
+      if (controller.value.isPlaying) {
+        controller.pause();
         _hideTimer?.cancel();
       } else {
-        _controller.play();
+        controller.play();
         _scheduleHide();
       }
       _showControls = true;
@@ -1195,20 +1305,36 @@ class _VideoPlayerDialogState extends State<_VideoPlayerDialog> {
   }
 
   void _seekBy(Duration offset) {
-    final target = _controller.value.position + offset;
+    final controller = _controller;
+    if (controller == null || !_isInitialized || _hasError) return;
+    final target = controller.value.position + offset;
     final clamped = target < Duration.zero
         ? Duration.zero
-        : (target > _controller.value.duration
-              ? _controller.value.duration
+        : (target > controller.value.duration
+              ? controller.value.duration
               : target);
-    _controller.seekTo(clamped);
+    controller.seekTo(clamped);
     _scheduleHide();
   }
 
   void _toggleMute() {
+    final controller = _controller;
+    if (controller == null || !_isInitialized || _hasError) return;
     setState(() {
-      _controller.setVolume(_controller.value.volume == 0 ? 1 : 0);
+      controller.setVolume(controller.value.volume == 0 ? 1 : 0);
     });
+  }
+
+  Future<void> _retryVideo() async {
+    final previous = _controller;
+    setState(() {
+      _controller = null;
+      _hasError = false;
+      _isInitialized = false;
+    });
+    previous?.removeListener(_onTick);
+    await previous?.dispose();
+    await _initialize();
   }
 
   String _formatDuration(Duration d) {
@@ -1221,8 +1347,8 @@ class _VideoPlayerDialogState extends State<_VideoPlayerDialog> {
   @override
   void dispose() {
     _hideTimer?.cancel();
-    _controller.removeListener(_onTick);
-    _controller.dispose();
+    _controller?.removeListener(_onTick);
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -1236,75 +1362,103 @@ class _VideoPlayerDialogState extends State<_VideoPlayerDialog> {
     double boxHeight = maxWidth * 9 / 16;
 
     if (_isInitialized) {
-      final aspect = _controller.value.aspectRatio;
-      boxHeight = boxWidth / aspect;
-      if (boxHeight > maxHeight) {
-        boxHeight = maxHeight;
-        boxWidth = boxHeight * aspect;
+      final aspect = _controller?.value.aspectRatio ?? 0;
+      if (aspect > 0) {
+        boxHeight = boxWidth / aspect;
+        if (boxHeight > maxHeight) {
+          boxHeight = maxHeight;
+          boxWidth = boxHeight * aspect;
+        }
       }
     }
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 24.h),
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: [
-          ClipRRect(
+    return PopScope(
+      canPop: false,
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 24.h),
+        child: _buildSafeShell(boxWidth, boxHeight),
+      ),
+    );
+  }
+
+  Widget _buildSafeShell(double boxWidth, double boxHeight) {
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20.r),
+          child: Container(
+            width: boxWidth,
+            height: boxHeight,
+            color: Colors.black,
+            child: _buildContent(),
+          ),
+        ),
+        Positioned(
+          top: -14.h,
+          right: -6.w,
+          child: InkWell(
+            onTap: () => Navigator.of(context).pop(),
             borderRadius: BorderRadius.circular(20.r),
             child: Container(
-              width: boxWidth,
-              height: boxHeight,
-              color: Colors.black,
-              child: _buildContent(),
-            ),
-          ),
-          Positioned(
-            top: -14.h,
-            right: -6.w,
-            child: InkWell(
-              onTap: () => Navigator.of(context).pop(),
-              borderRadius: BorderRadius.circular(20.r),
-              child: Container(
-                width: 34.w,
-                height: 34.w,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.close_rounded,
-                  size: 19.sp,
-                  color: Colors.black87,
-                ),
+              width: 34.w,
+              height: 34.w,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: AppIcon(
+                Icons.close_rounded,
+                size: 19.sp,
+                color: Colors.black87,
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildContent() {
     if (_hasError) {
       return Center(
-        child: Text(
-          "Couldn't load video",
-          style: GoogleFonts.outfit(color: Colors.white, fontSize: 13.sp),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppIcon(
+              Icons.videocam_off_rounded,
+              color: Colors.white70,
+              size: 30.sp,
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              "Couldn't load video",
+              style: GoogleFonts.outfit(color: Colors.white, fontSize: 13.sp),
+            ),
+            SizedBox(height: 10.h),
+            TextButton.icon(
+              onPressed: _retryVideo,
+              icon: const AppIcon(Icons.refresh_rounded, size: 17),
+              label: Text('Try again', style: GoogleFonts.outfit()),
+              style: TextButton.styleFrom(foregroundColor: Colors.white),
+            ),
+          ],
         ),
       );
     }
 
-    if (!_isInitialized) {
+    final controller = _controller;
+    if (!_isInitialized || controller == null) {
       return const Center(
         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
       );
     }
 
-    final position = _controller.value.position;
-    final duration = _controller.value.duration;
-    final isMuted = _controller.value.volume == 0;
+    final position = controller.value.position;
+    final duration = controller.value.duration;
+    final isMuted = controller.value.volume == 0;
 
     return GestureDetector(
       onTap: _toggleControls,
@@ -1312,7 +1466,7 @@ class _VideoPlayerDialogState extends State<_VideoPlayerDialog> {
         alignment: Alignment.center,
         fit: StackFit.expand,
         children: [
-          VideoPlayer(_controller),
+          VideoPlayer(controller),
 
           AnimatedOpacity(
             opacity: _showControls ? 1 : 0,
@@ -1364,7 +1518,7 @@ class _VideoPlayerDialogState extends State<_VideoPlayerDialog> {
                         ),
                         SizedBox(width: 28.w),
                         _TransportButton(
-                          icon: _controller.value.isPlaying
+                          icon: controller.value.isPlaying
                               ? Icons.pause_rounded
                               : Icons.play_arrow_rounded,
                           size: 34.sp,
@@ -1413,7 +1567,7 @@ class _VideoPlayerDialogState extends State<_VideoPlayerDialog> {
                                   .clamp(0, duration.inMilliseconds)
                                   .toDouble(),
                               onChanged: (v) {
-                                _controller.seekTo(
+                                controller.seekTo(
                                   Duration(milliseconds: v.round()),
                                 );
                                 _scheduleHide();
@@ -1443,7 +1597,7 @@ class _VideoPlayerDialogState extends State<_VideoPlayerDialog> {
                                 borderRadius: BorderRadius.circular(16.r),
                                 child: Padding(
                                   padding: EdgeInsets.all(4.r),
-                                  child: Icon(
+                                  child: AppIcon(
                                     isMuted
                                         ? Icons.volume_off_rounded
                                         : Icons.volume_up_rounded,
@@ -1496,7 +1650,7 @@ class _TransportButton extends StatelessWidget {
               : Colors.white.withValues(alpha: 0.14),
           shape: BoxShape.circle,
         ),
-        child: Icon(
+        child: AppIcon(
           icon,
           size: size,
           color: large ? AppColors.brand : Colors.white,

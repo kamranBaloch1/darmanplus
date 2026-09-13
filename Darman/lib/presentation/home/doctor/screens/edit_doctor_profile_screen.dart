@@ -87,6 +87,7 @@ void initState() {
     'PhD',
     'MPH',
     'MSc',
+    'MDEH'
   ];
   final currentTitle = widget.currentUser.title?.trim();
   if (currentTitle != null && currentTitle.isNotEmpty) {

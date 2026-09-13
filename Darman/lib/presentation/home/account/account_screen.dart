@@ -18,23 +18,6 @@ class AccountScreen extends StatelessWidget {
   final Future<void> Function() onLogout;
   final bool isLoggingOut;
 
-  Future<void> _openWhatsAppSupport(BuildContext context) async {
-    const phoneNumber = '923335540708'; // 03335540708 in international format
-    final messenger = ScaffoldMessenger.of(context);
-    final uri = Uri.parse('https://wa.me/$phoneNumber');
-    try {
-      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (opened) return;
-    } catch (_) {
-      // The message below handles devices without WhatsApp installed as well.
-    }
-    if (context.mounted) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Unable to open WhatsApp.')),
-      );
-    }
-  }
-
   Future<void> _openLegalPage(BuildContext context, String url) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
@@ -87,13 +70,6 @@ class AccountScreen extends StatelessWidget {
                 letterSpacing: 0.4,
                 color: AppColors.textSecondary.withValues(alpha: 0.75),
               ),
-            ),
-            const SizedBox(height: 10),
-            _LegalLinkButton(
-              icon: Icons.support_agent_rounded,
-              title: 'Support',
-              subtitle: 'Chat with us on WhatsApp',
-              onTap: () => _openWhatsAppSupport(context),
             ),
             const SizedBox(height: 10),
             _LegalLinkButton(

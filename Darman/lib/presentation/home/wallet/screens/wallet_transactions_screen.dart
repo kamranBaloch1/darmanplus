@@ -58,9 +58,7 @@ class _WalletTransactionsScreenState
   void initState() {
     super.initState();
 
-    _filter = widget.isDoctor
-        ? _TransactionFilter.moneyIn
-        : _TransactionFilter.moneyOut;
+    _filter = _TransactionFilter.moneyIn;
 
     _wallet = _load();
   }
@@ -76,9 +74,7 @@ class _WalletTransactionsScreenState
     }
 
     if (oldWidget.isDoctor != widget.isDoctor) {
-      _filter = widget.isDoctor
-          ? _TransactionFilter.moneyIn
-          : _TransactionFilter.moneyOut;
+      _filter = _TransactionFilter.moneyIn;
     }
   }
 

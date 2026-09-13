@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:darmaan/core/models/booking_model.dart';
 import 'package:darmaan/core/models/user_model.dart';
 import 'package:darmaan/core/theme/app_colors.dart';
+import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:darmaan/presentation/home/chat/chat_room.dart';
 import 'package:darmaan/presentation/home/patient/repository/patient_repository.dart';
 import 'package:darmaan/presentation/home/patient/screens/doctor_details_screen.dart';
@@ -594,22 +595,7 @@ class _PatientConsultationRequestScreenState
   }
 
   String _message(Object error) {
-    // Keep the exact server message on this screen while the booking path is
-    // being diagnosed. The global error formatter intentionally hides
-    // technical Supabase errors behind a generic message.
-    if (error is PostgrestException) {
-      return error.message.trim().isEmpty
-          ? 'Something went wrong. Please try again.'
-          : error.message.trim();
-    }
-
-    var message = error.toString().trim();
-    while (message.startsWith('Exception: ')) {
-      message = message.substring('Exception: '.length).trim();
-    }
-    return message.isEmpty
-        ? 'Something went wrong. Please try again.'
-        : message;
+    return AppErrorMessage.from(error);
   }
 
   @override
@@ -1307,7 +1293,7 @@ class _PendingRequestStatusState extends State<_PendingRequestStatus>
                         style: GoogleFonts.outfit(
                           fontSize: 26,
                           height: 1,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                           letterSpacing: .4,
                           color: AppColors.textPrimary,
                         ),

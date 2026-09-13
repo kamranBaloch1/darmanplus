@@ -23,6 +23,7 @@ Future<void> showDoctorVideoDialog(
 
   return showDialog(
     context: context,
+    barrierDismissible: false,
     barrierColor: Colors.black.withValues(alpha: 0.78),
     builder: (_) =>
         DoctorVideoDialog(doctor: doctor, onViewDetails: onViewDetails),
@@ -159,11 +160,13 @@ class _DoctorVideoDialogState extends State<DoctorVideoDialog> {
       dialogWidth = dialogHeight * videoAspectRatio;
     }
 
-    return Dialog(
-      elevation: 0,
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 64),
-      child: AnimatedContainer(
+    return PopScope(
+      canPop: false,
+      child: Dialog(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 64),
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
         width: dialogWidth,
@@ -204,6 +207,7 @@ class _DoctorVideoDialogState extends State<DoctorVideoDialog> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

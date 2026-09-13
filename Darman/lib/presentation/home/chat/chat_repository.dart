@@ -606,7 +606,22 @@ class ChatRepository {
   }
 
   Future<void> markRoomRead(String roomId) async {
-    await _supabase.rpc('mark_chat_room_read', params: {'p_room_id': roomId});
+    try {
+      await _supabase.rpc('mark_chat_room_read', params: {'p_room_id': roomId});
+      return;
+    } on PostgrestException {
+      final room = await getRoom(roomId);
+      final unreadField = room.doctorId == currentUserId
+          ? 'doctor_unread_count'
+          : 'patient_unread_count';
+      await _supabase
+          .from('chat_rooms')
+          .update({
+            unreadField: 0,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', roomId);
+    }
   }
 
   Future<void> markRoomDelivered(String roomId) async {

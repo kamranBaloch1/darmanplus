@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:darmaan/widgets/unread_message_badge.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 
 /// Lists every appointment request/booking made with the signed-in doctor,
 /// split into "Upcoming" (pending/accepted/in progress) and "History"
@@ -1365,6 +1366,22 @@ class _AppointmentTile extends StatelessWidget {
       booking.status == BookingStatus.inProgress ||
       booking.isFollowUpOpen;
 
+  String get _subtitle {
+    if (booking.hasScheduledFollowUp) return 'Follow-up Consultation';
+    switch (booking.status) {
+      case BookingStatus.pending:
+        return 'Consultation Request';
+      case BookingStatus.accepted:
+        return 'Accepted';
+      case BookingStatus.inProgress:
+        return 'In progress';
+      case BookingStatus.completed:
+        return 'Completed';
+      case BookingStatus.cancelled:
+        return 'Cancelled';
+    }
+  }
+
   ({String label, Color color, Color bg}) get _pill {
     if (booking.hasScheduledFollowUp) {
       return (
@@ -1439,130 +1456,111 @@ class _AppointmentTile extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(16),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.12),
-        blurRadius: 24,
-        spreadRadius: 1,
-        offset: const Offset(0, 10),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.05),
-        blurRadius: 6,
-        offset: const Offset(0, 2),
-      ),
-    ],
-  ),
-  padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      padding: const EdgeInsets.fromLTRB(13, 13, 13, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               CircleAvatar(
-                radius: 20,
+                radius: 21,
                 backgroundColor: const Color(0xFFF1F3F5),
                 backgroundImage: _hasImage
                     ? CachedNetworkImageProvider(patient!.profileImage!)
                     : null,
                 child: _hasImage
                     ? null
-                    : Icon(
+                    : AppIcon(
                         Icons.person_rounded,
-                        size: 18,
+                        size: 20,
                         color: AppColors.textSecondary,
                       ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 11),
+              // Name, subtitle, and time all live in ONE column so their
+              // left edges align automatically — no manual pixel math.
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      patient?.name ?? 'Patient unavailable',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            patient?.name ?? 'Patient unavailable',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.outfit(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: pill.bg,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            pill.label,
+                            style: GoogleFonts.outfit(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: pill.color,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      'Consultation Request',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(
-                        fontSize: 10.5,
-                        color: AppColors.textSecondary,
-                      ),
+                   
+                   
+                    Row(
+                      children: [
+                        AppIcon(
+                          Icons.access_time_rounded,
+                          size: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            timeLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.outfit(
+                              fontSize: 11.5,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 7,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: pill.bg,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: pill.color,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      pill.label,
-                      style: GoogleFonts.outfit(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w500,
-                        color: pill.color,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(
-                Icons.access_time_rounded,
-                size: 13,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(width: 5),
-              Expanded(
-                child: Text(
-                  timeLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.outfit(
-                    fontSize: 10.5,
-                    color: AppColors.textSecondary,
-                  ),
                 ),
               ),
             ],
           ),
           if (showSecondary || showPrimary) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 11),
             const Divider(height: 1, color: Color(0xFFE9EBEE)),
             const SizedBox(height: 10),
             Row(
@@ -1576,7 +1574,7 @@ class _AppointmentTile extends StatelessWidget {
                       onTap: isCancelling ? null : onCancel,
                     ),
                   ),
-                if (showSecondary && showPrimary) const SizedBox(width: 8),
+                if (showSecondary && showPrimary) const SizedBox(width: 9),
                 if (showPrimary)
                   Expanded(
                     child: _PillActionButton(
@@ -1590,7 +1588,11 @@ class _AppointmentTile extends StatelessWidget {
                           : UnreadMessageBadge(
                               bookingId: booking.id,
                               isDoctor: true,
-                              child: Icon(primaryIcon, size: 15),
+                              child: AppIcon(
+                                primaryIcon,
+                                size: 14,
+                                color: AppColors.brand,
+                              ),
                             ),
                     ),
                   ),
@@ -1623,21 +1625,24 @@ class _PillActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 38,
+      height: 40,
       child: TextButton(
         onPressed: busy ? null : onTap,
         style: TextButton.styleFrom(
-          backgroundColor: filled ? AppColors.brand : const Color(0xFFFAFBFC),
-          foregroundColor: filled ? Colors.white : AppColors.textSecondary,
+          backgroundColor: filled ? AppColors.brand : Colors.transparent,
+          foregroundColor: filled ? Colors.white : const Color(0xFF9CA3AF),
           disabledBackgroundColor: filled
               ? AppColors.brand.withValues(alpha: .6)
-              : const Color(0xFFF1F3F5),
+              : Colors.transparent,
           disabledForegroundColor: filled
               ? Colors.white
-              : AppColors.textSecondary,
+              : const Color(0xFF9CA3AF),
           padding: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(11),
+            borderRadius: BorderRadius.circular(12),
+            side: filled
+                ? BorderSide.none
+                : const BorderSide(color: Color(0xFFE9EBEE), width: 1),
           ),
         ),
         child: busy
@@ -1646,22 +1651,35 @@ class _PillActionButton extends StatelessWidget {
                 height: 14,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: filled ? Colors.white : AppColors.textSecondary,
+                  color: filled ? Colors.white : const Color(0xFF9CA3AF),
                 ),
               )
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (filled) ...[
-                    iconWidget ??
-                        (icon != null ? Icon(icon, size: 15) : const SizedBox.shrink()),
-                    const SizedBox(width: 6),
+                    Container(
+                      width: 19,
+                      height: 19,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      // Explicit color overrides the white foregroundColor
+                      // this button would otherwise pass down via IconTheme.
+                      child: iconWidget ??
+                          (icon != null
+                              ? AppIcon(icon, size: 13, color: AppColors.brand)
+                              : const SizedBox.shrink()),
+                    ),
+                    const SizedBox(width: 7),
                   ],
                   Text(
                     label,
                     style: GoogleFonts.outfit(
-                      fontSize: filled ? 13 : 12,
-                      fontWeight: FontWeight.w500,
+                      fontSize: filled ? 13.5 : 13,
+                      fontWeight: filled ? FontWeight.w500 : FontWeight.w500,
                     ),
                   ),
                 ],

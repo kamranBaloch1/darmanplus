@@ -121,7 +121,10 @@ class _DoctorDocumentScreenState extends State<DoctorDocumentScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      _showSnack('Could not select document: $e');
+      _showSnack(AppErrorMessage.from(
+        e,
+        fallback: 'Could not select document. Please try again.',
+      ));
     }
   }
 
@@ -416,69 +419,59 @@ class _DoctorDocumentScreenState extends State<DoctorDocumentScreen> {
 
                     SizedBox(height: 18.h),
 
-                    Material(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14.r),
-                      child: InkWell(
-                        onTap: isSubmitting ? null : _pickDocument,
-                        borderRadius: BorderRadius.circular(14.r),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 14.w,
-                            vertical: 13.h,
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 38.w,
-                                height: 38.w,
-                                decoration: BoxDecoration(
-                                  color: AppColors.brand.withValues(alpha: .09),
-                                  borderRadius: BorderRadius.circular(11.r),
-                                ),
-                                child: Icon(
-                                  Icons.upload_file_rounded,
-                                  size: 20.sp,
-                                  color: AppColors.brand,
-                                ),
-                              ),
-                              SizedBox(width: 12.w),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      hasDocument
-                                          ? 'Change documents'
-                                          : 'Upload verification document',
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 13.5.sp,
-                                        fontWeight: FontWeight.w500,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                    SizedBox(height: 2.h),
-                                    Text(
-                                      'PDF only · Multiple files allowed',
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 11.5.sp,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(
-                                Icons.add_rounded,
-                                size: 22.sp,
-                                color: AppColors.brand,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                   Material(
+  color: AppColors.brand.withValues(alpha: 0.06),
+  borderRadius: BorderRadius.circular(14.r),
+  child: InkWell(
+    onTap: isSubmitting ? null : _pickDocument,
+    borderRadius: BorderRadius.circular(14.r),
+    child: Container(
+      width: double.infinity,
+      height: 54.h,
+      padding: EdgeInsets.symmetric(horizontal: 14.w),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14.r),
+       
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36.w,
+            height: 36.w,
+            decoration: BoxDecoration(
+              color: AppColors.brand,
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: Icon(
+              Icons.upload_file_rounded,
+              size: 19.sp,
+              color: Colors.white,
+            ),
+          ),
 
+          SizedBox(width: 12.w),
+
+          Expanded(
+            child: Text(
+              hasDocument ? 'Change Document' : 'Upload verification Document',
+              style: GoogleFonts.outfit(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+
+          Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 15.sp,
+            color: AppColors.brand,
+          ),
+        ],
+      ),
+    ),
+  ),
+),
                     if (doctorDocuments.isNotEmpty) ...[
                       SizedBox(height: 10.h),
 

@@ -9,7 +9,11 @@ class DoctorSpecialization {
     required this.icon,
   });
 }
+
 const List<DoctorSpecialization> kDoctorSpecializations = [
+  // ─────────────────────────────────────────────
+  // GENERAL & INTERNAL MEDICINE
+  // ─────────────────────────────────────────────
   DoctorSpecialization(
     name: 'General Physician',
     icon: Icons.health_and_safety_rounded,
@@ -23,21 +27,137 @@ const List<DoctorSpecialization> kDoctorSpecializations = [
     icon: Icons.medical_services_rounded,
   ),
   DoctorSpecialization(
+    name: 'Geriatrician',
+    icon: Icons.elderly_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Emergency Medicine Specialist',
+    icon: Icons.emergency_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Critical Care Specialist',
+    icon: Icons.monitor_heart_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Pain Management Specialist',
+    icon: Icons.healing_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Sleep Medicine Specialist',
+    icon: Icons.bedtime_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Palliative Care Specialist',
+    icon: Icons.volunteer_activism_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Rehabilitation Medicine Specialist',
+    icon: Icons.accessibility_new_rounded,
+  ),
+
+  // ─────────────────────────────────────────────
+  // CARDIOLOGY
+  // ─────────────────────────────────────────────
+  DoctorSpecialization(
     name: 'Cardiologist',
     icon: Icons.favorite_rounded,
   ),
   DoctorSpecialization(
-    name: 'Dermatologist',
-    icon: Icons.face_retouching_natural_rounded,
+    name: 'Interventional Cardiologist',
+    icon: Icons.favorite_rounded,
   ),
+  DoctorSpecialization(
+    name: 'Pediatric Cardiologist',
+    icon: Icons.favorite_border_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Cardiovascular Surgeon',
+    icon: Icons.favorite_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Cardiothoracic Surgeon',
+    icon: Icons.favorite_border_rounded,
+  ),
+
+  // ─────────────────────────────────────────────
+  // ENDOCRINOLOGY & METABOLIC
+  // ─────────────────────────────────────────────
   DoctorSpecialization(
     name: 'Endocrinologist',
     icon: Icons.bloodtype_rounded,
   ),
   DoctorSpecialization(
+    name: 'Diabetologist',
+    icon: Icons.bloodtype_rounded,
+  ),
+
+  // ─────────────────────────────────────────────
+  // GASTROENTEROLOGY & LIVER
+  // ─────────────────────────────────────────────
+  DoctorSpecialization(
     name: 'Gastroenterologist',
     icon: Icons.local_dining_rounded,
   ),
+  DoctorSpecialization(
+    name: 'Hepatologist',
+    icon: Icons.local_dining_rounded,
+  ),
+
+  // ─────────────────────────────────────────────
+  // KIDNEY & URINARY
+  // ─────────────────────────────────────────────
+  DoctorSpecialization(
+    name: 'Nephrologist',
+    icon: Icons.water_drop_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Urologist',
+    icon: Icons.water_drop_rounded,
+  ),
+
+  // ─────────────────────────────────────────────
+  // NEUROLOGY & NEUROSURGERY
+  // ─────────────────────────────────────────────
+  DoctorSpecialization(
+    name: 'Neurologist',
+    icon: Icons.psychology_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Pediatric Neurologist',
+    icon: Icons.psychology_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Neurosurgeon',
+    icon: Icons.psychology_rounded,
+  ),
+
+  // ─────────────────────────────────────────────
+  // DERMATOLOGY
+  // ─────────────────────────────────────────────
+  DoctorSpecialization(
+    name: 'Dermatologist',
+    icon: Icons.face_retouching_natural_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Dermatopathologist',
+    icon: Icons.biotech_rounded,
+  ),
+
+  // ─────────────────────────────────────────────
+  // PEDIATRICS
+  // ─────────────────────────────────────────────
+  DoctorSpecialization(
+    name: 'Pediatrician',
+    icon: Icons.child_care_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Pediatric Surgeon',
+    icon: Icons.child_care_rounded,
+  ),
+
+  // ─────────────────────────────────────────────
+  // WOMEN'S HEALTH
+  // ─────────────────────────────────────────────
   DoctorSpecialization(
     name: 'Gynecologist',
     icon: Icons.pregnant_woman_rounded,
@@ -47,49 +167,57 @@ const List<DoctorSpecialization> kDoctorSpecializations = [
     icon: Icons.pregnant_woman_rounded,
   ),
   DoctorSpecialization(
-    name: 'Pediatrician',
-    icon: Icons.child_care_rounded,
+    name: 'Obstetrician & Gynecologist',
+    icon: Icons.pregnant_woman_rounded,
   ),
-  DoctorSpecialization(
-    name: 'Neurologist',
-    icon: Icons.psychology_rounded,
-  ),
-  DoctorSpecialization(
-    name: 'Neurosurgeon',
-    icon: Icons.psychology_rounded,
-  ),
+
+  // ─────────────────────────────────────────────
+  // ONCOLOGY
+  // ─────────────────────────────────────────────
   DoctorSpecialization(
     name: 'Oncologist',
     icon: Icons.biotech_rounded,
   ),
   DoctorSpecialization(
+    name: 'Surgical Oncologist',
+    icon: Icons.medical_services_rounded,
+  ),
+
+  // ─────────────────────────────────────────────
+  // EYE CARE
+  // ─────────────────────────────────────────────
+  DoctorSpecialization(
     name: 'Ophthalmologist',
     icon: Icons.visibility_rounded,
   ),
   DoctorSpecialization(
-    name: 'Orthopedic Surgeon',
-    icon: Icons.accessibility_new_rounded,
+    name: 'Ophthalmic Surgeon',
+    icon: Icons.visibility_rounded,
   ),
-  DoctorSpecialization(
-    name: 'Pulmonologist',
-    icon: Icons.air_rounded,
-  ),
-  DoctorSpecialization(
-    name: 'Radiologist',
-    icon: Icons.image_search_rounded,
-  ),
-  DoctorSpecialization(
-    name: 'Urologist',
-    icon: Icons.water_drop_rounded,
-  ),
-  DoctorSpecialization(
-    name: 'Nephrologist',
-    icon: Icons.water_drop_rounded,
-  ),
+
+  // ─────────────────────────────────────────────
+  // ENT
+  // ─────────────────────────────────────────────
   DoctorSpecialization(
     name: 'ENT Specialist',
     icon: Icons.hearing_rounded,
   ),
+  DoctorSpecialization(
+    name: 'Otolaryngologist',
+    icon: Icons.hearing_rounded,
+  ),
+
+  // ─────────────────────────────────────────────
+  // ORTHOPEDICS
+  // ─────────────────────────────────────────────
+  DoctorSpecialization(
+    name: 'Orthopedic Surgeon',
+    icon: Icons.accessibility_new_rounded,
+  ),
+
+  // ─────────────────────────────────────────────
+  // GENERAL & SPECIALIZED SURGERY
+  // ─────────────────────────────────────────────
   DoctorSpecialization(
     name: 'General Surgeon',
     icon: Icons.medical_services_rounded,
@@ -103,45 +231,109 @@ const List<DoctorSpecialization> kDoctorSpecializations = [
     icon: Icons.bloodtype_rounded,
   ),
   DoctorSpecialization(
-    name: 'Cardiothoracic Surgeon',
-    icon: Icons.favorite_border_rounded,
+    name: 'Breast Surgeon',
+    icon: Icons.medical_services_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Colorectal Surgeon',
+    icon: Icons.medical_services_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Gastrointestinal Surgeon',
+    icon: Icons.medical_services_rounded,
   ),
   DoctorSpecialization(
     name: 'Pediatric Surgeon',
     icon: Icons.child_care_rounded,
   ),
   DoctorSpecialization(
+    name: 'Oral & Maxillofacial Surgeon',
+    icon: Icons.face_rounded,
+  ),
+
+  // ─────────────────────────────────────────────
+  // PULMONOLOGY
+  // ─────────────────────────────────────────────
+  DoctorSpecialization(
+    name: 'Pulmonologist',
+    icon: Icons.air_rounded,
+  ),
+
+  // ─────────────────────────────────────────────
+  // RADIOLOGY
+  // ─────────────────────────────────────────────
+  DoctorSpecialization(
+    name: 'Radiologist',
+    icon: Icons.image_search_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Interventional Radiologist',
+    icon: Icons.image_search_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Nuclear Radiologist',
+    icon: Icons.image_search_rounded,
+  ),
+  DoctorSpecialization(
+    name: 'Nuclear Medicine Specialist',
+    icon: Icons.science_rounded,
+  ),
+
+  // ─────────────────────────────────────────────
+  // RHEUMATOLOGY
+  // ─────────────────────────────────────────────
+  DoctorSpecialization(
     name: 'Rheumatologist',
     icon: Icons.accessibility_new_rounded,
   ),
+
+  // ─────────────────────────────────────────────
+  // BLOOD & IMMUNOLOGY
+  // ─────────────────────────────────────────────
   DoctorSpecialization(
     name: 'Hematologist',
     icon: Icons.bloodtype_rounded,
   ),
   DoctorSpecialization(
-    name: 'Infectious Disease Specialist',
-    icon: Icons.coronavirus_rounded,
+    name: 'Clinical Hematologist',
+    icon: Icons.bloodtype_rounded,
   ),
   DoctorSpecialization(
     name: 'Allergist & Immunologist',
-    icon:  Icons.health_and_safety_rounded,
+    icon: Icons.health_and_safety_rounded,
   ),
   DoctorSpecialization(
-    name: 'Critical Care Specialist',
-    icon: Icons.monitor_heart_rounded,
+    name: 'Clinical Immunologist',
+    icon: Icons.health_and_safety_rounded,
   ),
+
+  // ─────────────────────────────────────────────
+  // INFECTIOUS DISEASE
+  // ─────────────────────────────────────────────
   DoctorSpecialization(
-    name: 'Emergency Medicine Specialist',
-    icon: Icons.emergency_rounded,
+    name: 'Infectious Disease Specialist',
+    icon: Icons.coronavirus_rounded,
   ),
+
+  // ─────────────────────────────────────────────
+  // ANESTHESIA
+  // ─────────────────────────────────────────────
   DoctorSpecialization(
     name: 'Anesthesiologist',
     icon: Icons.medical_services_rounded,
   ),
+
+  // ─────────────────────────────────────────────
+  // PATHOLOGY & LABORATORY
+  // ─────────────────────────────────────────────
   DoctorSpecialization(
     name: 'Pathologist',
     icon: Icons.biotech_rounded,
   ),
+
+  // ─────────────────────────────────────────────
+  // MENTAL HEALTH
+  // ─────────────────────────────────────────────
   DoctorSpecialization(
     name: 'Psychiatrist',
     icon: Icons.self_improvement_rounded,
@@ -150,6 +342,10 @@ const List<DoctorSpecialization> kDoctorSpecializations = [
     name: 'Psychologist',
     icon: Icons.psychology_alt_rounded,
   ),
+
+  // ─────────────────────────────────────────────
+  // DENTISTRY
+  // ─────────────────────────────────────────────
   DoctorSpecialization(
     name: 'Dentist',
     icon: Icons.medical_information_rounded,
@@ -170,10 +366,10 @@ const List<DoctorSpecialization> kDoctorSpecializations = [
     name: 'Endodontist',
     icon: Icons.medical_information_rounded,
   ),
-  DoctorSpecialization(
-    name: 'Oral & Maxillofacial Surgeon',
-    icon: Icons.face_rounded,
-  ),
+
+  // ─────────────────────────────────────────────
+  // ALLIED HEALTH
+  // ─────────────────────────────────────────────
   DoctorSpecialization(
     name: 'Physiotherapist',
     icon: Icons.directions_run_rounded,
@@ -194,37 +390,21 @@ const List<DoctorSpecialization> kDoctorSpecializations = [
     name: 'Dietitian',
     icon: Icons.restaurant_menu_rounded,
   ),
-  DoctorSpecialization(
-    name: 'Pain Management Specialist',
-    icon: Icons.healing_rounded,
-  ),
-  DoctorSpecialization(
-    name: 'Sleep Medicine Specialist',
-    icon: Icons.bedtime_rounded,
-  ),
-  DoctorSpecialization(
-    name: 'Geriatrician',
-    icon: Icons.elderly_rounded,
-  ),
-  DoctorSpecialization(
-    name: 'Palliative Care Specialist',
-    icon: Icons.volunteer_activism_rounded,
-  ),
+
+  // ─────────────────────────────────────────────
+  // SPORTS & REHABILITATION
+  // ─────────────────────────────────────────────
   DoctorSpecialization(
     name: 'Sports Medicine Specialist',
     icon: Icons.sports_rounded,
   ),
-  DoctorSpecialization(
-    name: 'Rehabilitation Medicine Specialist',
-    icon: Icons.accessibility_new_rounded,
-  ),
+
+  // ─────────────────────────────────────────────
+  // GENETICS & PHARMACOLOGY
+  // ─────────────────────────────────────────────
   DoctorSpecialization(
     name: 'Geneticist',
     icon: Icons.science_rounded,
-  ),
-  DoctorSpecialization(
-    name: 'Nuclear Medicine Specialist',
-    icon:  Icons.science_rounded,
   ),
   DoctorSpecialization(
     name: 'Clinical Pharmacologist',
@@ -232,14 +412,15 @@ const List<DoctorSpecialization> kDoctorSpecializations = [
   ),
 ];
 
-
 DoctorSpecialization? findSpecialization(String? name) {
   if (name == null || name.trim().isEmpty) {
     return null;
   }
 
+  final normalizedName = name.trim().toLowerCase();
+
   for (final specialization in kDoctorSpecializations) {
-    if (specialization.name.toLowerCase() == name.trim().toLowerCase()) {
+    if (specialization.name.toLowerCase() == normalizedName) {
       return specialization;
     }
   }

@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { GoogleAuth } from "npm:google-auth-library@9";
+import { sendPushToUser } from "../_shared/push.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -62,22 +62,6 @@ Deno.serve(async (request) => {
     const doctorName = doctor?.name?.trim() || "Your doctor";
     const patientName = patient?.name?.trim() || "Your patient";
 
-    const credentialsJson = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
-    if (!credentialsJson) throw new Error("Firebase is not configured");
-    const credentials = JSON.parse(credentialsJson);
-    const googleAuth = new GoogleAuth({
-      credentials,
-      scopes: ["https://www.googleapis.com/auth/firebase.messaging"],
-    });
-    const authClient = await googleAuth.getClient();
-    const accessTokenResult = await authClient.getAccessToken();
-    const accessToken = typeof accessTokenResult === "string"
-      ? accessTokenResult
-      : accessTokenResult.token;
-    if (!accessToken) throw new Error("Firebase authorization failed");
-
-    const endpoint =
-      `https://fcm.googleapis.com/v1/projects/${credentials.project_id}/messages:send`;
     const recipients = [
       {
         userId: booking.patient_id,
@@ -98,67 +82,25 @@ Deno.serve(async (request) => {
     let sent = 0;
     let attempted = 0;
     for (const recipient of recipients) {
-      const { data: devices, error: tokenError } = await admin
-        .from("push_notification_tokens")
-        .select("token")
-        .eq("user_id", recipient.userId);
-      if (tokenError) throw tokenError;
-
-      for (const device of devices ?? []) {
-        attempted += 1;
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            message: {
-              token: device.token,
-              notification: {
-                title: recipient.title,
-                body: recipient.notificationBody,
-              },
-              data: {
-                type: "consultation_follow_up_ended",
-                recipient_type: recipient.recipientType,
-                booking_id: booking.id,
-                doctor_id: booking.doctor_id,
-                patient_id: booking.patient_id,
-                doctor_name: doctorName,
-                patient_name: patientName,
-                follow_up_date: booking.follow_up_date ?? "",
-              },
-              android: {
-                priority: "HIGH",
-                ttl: "86400s",
-                notification: {
-                  channel_id: "consultation_requests",
-                  sound: "default",
-                  visibility: "PRIVATE",
-                  notification_priority: "PRIORITY_HIGH",
-                  default_vibrate_timings: true,
-                },
-              },
-              apns: {
-                headers: { "apns-priority": "10" },
-                payload: { aps: { sound: "default", badge: 1 } },
-              },
-            },
-          }),
-        });
-        if (response.ok) {
-          sent += 1;
-          continue;
-        }
-        const errorBody = await response.text();
-        if (errorBody.includes("UNREGISTERED")) {
-          await admin.from("push_notification_tokens").delete().eq(
-            "token",
-            device.token,
-          );
-        }
-      }
+      const result = await sendPushToUser({
+        admin,
+        userId: recipient.userId,
+        title: recipient.title,
+        body: recipient.notificationBody,
+        ttl: "86400s",
+        data: {
+          type: "consultation_follow_up_ended",
+          recipient_type: recipient.recipientType,
+          booking_id: booking.id,
+          doctor_id: booking.doctor_id,
+          patient_id: booking.patient_id,
+          doctor_name: doctorName,
+          patient_name: patientName,
+          follow_up_date: booking.follow_up_date ?? "",
+        },
+      });
+      sent += result.sent;
+      attempted += result.attempted;
     }
 
     return Response.json({ sent, attempted }, { headers: corsHeaders });

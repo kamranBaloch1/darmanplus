@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:darmaan/core/theme/app_colors.dart';
+import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:darmaan/presentation/home/wallet/repository/manual_top_up_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -83,7 +84,10 @@ class _PaymentReceiptScreenState extends State<PaymentReceiptScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Payment submission failed: ${e.toString()}'),
+          content: Text(AppErrorMessage.from(
+            e,
+            fallback: 'Payment receipt could not be submitted. Please try again.',
+          )),
           behavior: SnackBarBehavior.floating,
         ),
       );

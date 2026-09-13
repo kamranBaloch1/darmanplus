@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:darmaan/core/models/video_call_invite.dart';
 import 'package:darmaan/presentation/home/video_call/video_call_invite_repository.dart';
 import 'package:darmaan/presentation/home/video_call/video_call_screen.dart';
+import 'package:darmaan/widgets/app_icon.dart';
 import 'package:flutter/material.dart';
 
 class OutgoingVideoCallScreen extends StatefulWidget {
@@ -173,7 +174,7 @@ class _OutgoingVideoCallScreenState extends State<OutgoingVideoCallScreen> {
                       : null,
                   child: widget.peerAvatarUrl?.trim().isNotEmpty == true
                       ? null
-                      : const Icon(Icons.person, size: 62, color: Colors.white70),
+                      : const AppIcon(Icons.person, size: 62, color: Colors.white70),
                 ),
               ),
             ),
@@ -199,7 +200,7 @@ class _OutgoingVideoCallScreenState extends State<OutgoingVideoCallScreen> {
                   ),
                   if (widget.peerVerified) ...[
                     const SizedBox(width: 6),
-                    const Icon(
+                    const AppIcon(
                       Icons.verified_rounded,
                       size: 21,
                       color: Color(0xFF64B5F6),
@@ -228,7 +229,7 @@ class _OutgoingVideoCallScreenState extends State<OutgoingVideoCallScreen> {
                     child: IconButton(
                       tooltip: 'Cancel call',
                       onPressed: _cancel,
-                      icon: const Icon(
+                      icon: const AppIcon(
                         Icons.call_end,
                         color: Colors.white,
                         size: 30,

@@ -24,7 +24,7 @@
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="incoming_calls_v3" />
+            android:value="consultation_requests_v2" />
 
         <activity
             android:name="io.agora.rtc2.extensions.MediaProjectionMgr$LocalScreenCaptureAssistantActivity"
