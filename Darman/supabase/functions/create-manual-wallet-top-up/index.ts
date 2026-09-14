@@ -134,7 +134,6 @@ Deno.serve(async (req) => {
 
     try {
       await notifyAdminAboutManualTopUp({
-        authHeader,
         topUp: data,
         receiptUrl,
         userId: user.id,
@@ -174,23 +173,23 @@ Deno.serve(async (req) => {
 });
 
 async function notifyAdminAboutManualTopUp({
-  authHeader,
   topUp,
   receiptUrl,
   userId,
 }: {
-  authHeader: string;
   topUp: Record<string, unknown>;
   receiptUrl: string;
   userId: string;
 }) {
   const to = adminAlertEmails();
-  if (!to.length) return;
+  if (!to.length) {
+    console.warn("MANUAL TOP-UP EMAIL SKIPPED: no admin recipient configured");
+    return;
+  }
 
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    { global: { headers: { Authorization: authHeader } } },
   );
 
   const { data: patient } = await admin
@@ -204,7 +203,7 @@ async function notifyAdminAboutManualTopUp({
   const email = patient?.email?.toString().trim() || "";
   const requestId = topUp?.id?.toString() || "new request";
 
-  await sendEmail({
+  const sent = await sendEmail({
     to,
     subject: "New manual wallet top-up request",
     text:
@@ -212,6 +211,7 @@ async function notifyAdminAboutManualTopUp({
     html:
       `<h2>New manual wallet top-up request</h2><p>A patient submitted a receipt for review.</p><ul><li><strong>Patient:</strong> ${escapeHtml(patientName)}</li><li><strong>Phone:</strong> ${escapeHtml(phone)}</li><li><strong>Email:</strong> ${escapeHtml(email || "-")}</li><li><strong>Request ID:</strong> ${escapeHtml(requestId)}</li></ul><p><a href="${escapeHtml(receiptUrl)}">Open receipt</a></p><p>Open Darman Admin to verify the payment.</p>`,
   });
+  console.log("MANUAL TOP-UP EMAIL RESULT:", { sent, to, requestId });
 }
 
 function escapeHtml(value: string) {
