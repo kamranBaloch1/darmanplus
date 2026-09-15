@@ -414,6 +414,15 @@ const List<DoctorSpecialization> kDoctorSpecializations = [
     name: 'Clinical Pharmacologist',
     icon: Icons.medication_rounded,
   ),
+  DoctorSpecialization(
+  name: 'RMP',
+  icon: Icons.medical_services_rounded,
+),
+
+DoctorSpecialization(
+  name: 'PMDC',
+  icon: Icons.health_and_safety_rounded,
+),
 ];
 
 DoctorSpecialization? findSpecialization(String? name) {

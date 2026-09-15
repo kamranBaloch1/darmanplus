@@ -1,7 +1,11 @@
+import 'dart:io';
+
+import 'package:darmaan/core/theme/app_colors.dart';
+import 'package:darmaan/core/utils/app_error_message.dart';
+import 'package:darmaan/presentation/home/wallet/repository/manual_top_up_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-import 'payment_receipt_screen.dart';
+import 'package:image_picker/image_picker.dart';
 
 class JazzCashPaymentScreen extends StatefulWidget {
   const JazzCashPaymentScreen({
@@ -14,7 +18,10 @@ class JazzCashPaymentScreen extends StatefulWidget {
 }
 
 class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
-  static const String businessName = 'Darman';
+  final ManualTopUpRepository _manualRepository = ManualTopUpRepository();
+  final ImagePicker _picker = ImagePicker();
+
+  static const String businessName = 'FindUs';
   static const String accountNumber = '03318335247';
 
   static const String qrAsset =
@@ -25,9 +32,11 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
 
   static const Color accent = Color(0xFF17181A);
   static const Color jazzCashRed = Color(0xFFE31E24);
+  static const Color success = Color(0xFF22A06B);
 
   bool _copied = false;
-  bool _isContinuing = false;
+  bool _submitting = false;
+  File? _receiptFile;
 
   Future<void> _copyAccountNumber() async {
     await Clipboard.setData(const ClipboardData(text: accountNumber));
@@ -38,17 +47,184 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
     });
   }
 
-  Future<void> _continue() async {
-    setState(() => _isContinuing = true);
-    await Future.delayed(const Duration(milliseconds: 350));
-    if (!mounted) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PaymentReceiptScreen(),
+  Future<void> _chooseReceiptSource() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E4E8),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const SizedBox(height: 18),
+              _ReceiptSourceTile(
+                icon: Icons.photo_camera_outlined,
+                title: 'Take photo',
+                subtitle: 'Use camera',
+                onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+              ),
+              const SizedBox(height: 10),
+              _ReceiptSourceTile(
+                icon: Icons.photo_library_outlined,
+                title: 'Choose from gallery',
+                subtitle: 'Upload screenshot',
+                onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
       ),
     );
-    if (mounted) setState(() => _isContinuing = false);
+    if (source == null) return;
+    await _pickReceipt(source);
+  }
+
+  Future<void> _pickReceipt(ImageSource source) async {
+    try {
+      final pickedFile = await _picker.pickImage(
+        source: source,
+        imageQuality: 90,
+      );
+      if (pickedFile == null) return;
+      setState(() => _receiptFile = File(pickedFile.path));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to select receipt'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _submitReceipt() async {
+    final receipt = _receiptFile;
+    if (receipt == null || _submitting) return;
+
+    setState(() => _submitting = true);
+    try {
+      await _manualRepository.submitReceipt(receipt: receipt);
+      if (!mounted) return;
+      setState(() => _receiptFile = null);
+      await _showSuccessDialog();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppErrorMessage.from(
+              error,
+              fallback: 'Payment receipt could not be submitted.',
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _showSuccessDialog() {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => Dialog(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 26),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(22, 26, 22, 20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.10),
+                blurRadius: 28,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  color: success.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  color: success,
+                  size: 34,
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Receipt submitted',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                  color: accent,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'We will review it and credit your wallet after verification.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.45,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 22),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.brand,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Done',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _jazzCashMark({double size = 22}) {
@@ -82,6 +258,8 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasReceipt = _receiptFile != null;
+
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFB),
       body: SafeArea(
@@ -111,7 +289,7 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      'Complete Your Payment',
+                      'Pay with JazzCash',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w500,
@@ -121,7 +299,7 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Scan to pay via JazzCash or any banking app.',
+                      'Scan the QR or send to the number below.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
@@ -131,7 +309,7 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 18),
 
                     // Card + floating logo badge. The badge overlaps the
                     // top edge of the card so the brand reads first,
@@ -141,7 +319,7 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                       alignment: Alignment.topCenter,
                       children: [
                         Container(
-                          margin: const EdgeInsets.only(top: 26),
+                          margin: const EdgeInsets.only(top: 38),
                           // padding: const EdgeInsets.fromLTRB(20, 34, 20, 20),
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -180,15 +358,16 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                                   },
                                 ),
                               ),
-                              const SizedBox(height: 14),
+                              const SizedBox(height: 10),
                               Text(
                                 businessName,
                                 style: const TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                   color: accent,
                                 ),
                               ),
+                              const SizedBox(height: 10),
                             ],
                           ),
                         ),
@@ -233,7 +412,7 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                       ],
                     ),
 
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 18),
 
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -309,11 +488,171 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 16),
+
+                    GestureDetector(
+                      onTap: _submitting ? null : _chooseReceiptSource,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        width: double.infinity,
+                        height: hasReceipt ? 150 : 92,
+                        padding: hasReceipt ? EdgeInsets.zero : const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: hasReceipt
+                                ? success.withOpacity(0.55)
+                                : const Color(0xFFECEDEF),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: hasReceipt
+                                  ? Colors.black.withOpacity(0.04)
+                                  : Colors.black.withOpacity(0.05),
+                              blurRadius: hasReceipt ? 14 : 16,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: hasReceipt
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(17),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Image.file(
+                                      _receiptFile!,
+                                      fit: BoxFit.contain,
+                                    ),
+                                    Positioned(
+                                      top: 10,
+                                      right: 10,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.12),
+                                              blurRadius: 8,
+                                            ),
+                                          ],
+                                        ),
+                                        child: IconButton(
+                                          onPressed: _submitting ? null : _chooseReceiptSource,
+                                          icon: const Icon(
+                                            Icons.edit_rounded,
+                                            size: 18,
+                                            color: accent,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      left: 12,
+                                      bottom: 12,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: success,
+                                          borderRadius: BorderRadius.circular(999),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.check_rounded,
+                                              color: Colors.white,
+                                              size: 14,
+                                            ),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              'Receipt added',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : Row(
+                                children: [
+                                  Container(
+                                    width: 42,
+                                    height: 42,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.brand.withOpacity(0.10),
+                                      borderRadius: BorderRadius.circular(13),
+                                    ),
+                                    child: Icon(
+                                      Icons.upload_file_rounded,
+                                      color: AppColors.brand,
+                                      size: 21,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 11),
+                                  const Expanded(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Upload receipt',
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w500,
+                                            color: accent,
+                                          ),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          'Screenshot or photo of payment',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Color(0xFF777B84),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 11,
+                                      vertical: 7,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.brand.withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      'Add',
+                                      style: TextStyle(
+                                        color: AppColors.brand,
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 14),
 
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(13),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14),
@@ -330,7 +669,7 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Once you\'ve sent the payment, tap continue to upload your receipt for verification.',
+                              'We review your receipt and credit your wallet after verification.',
                               style: TextStyle(
                                 fontSize: 12.5,
                                 height: 1.5,
@@ -356,28 +695,27 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: _isContinuing ? null : _continue,
+                  onPressed: hasReceipt && !_submitting ? _submitReceipt : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.white,
-                    foregroundColor: accent,
+                    backgroundColor: AppColors.brand,
+                    disabledBackgroundColor: Colors.grey.shade300,
+                    foregroundColor: Colors.white,
                     elevation: 0,
-                    side: BorderSide(color: Colors.grey.shade300, width: 1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: _isContinuing
+                  child: _submitting
                       ? const SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.2,
-                            valueColor: AlwaysStoppedAnimation(accent),
+                            valueColor: AlwaysStoppedAnimation(Colors.white),
                           ),
                         )
                       : const Text(
-                          'Continue to Upload Receipt',
+                          'Submit receipt',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -387,6 +725,80 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReceiptSourceTile extends StatelessWidget {
+  const _ReceiptSourceTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFFAFAFB),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.brand.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(
+                  icon,
+                  color: AppColors.brand,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF17181A),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF777B84),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.grey.shade500,
+              ),
+            ],
+          ),
         ),
       ),
     );
