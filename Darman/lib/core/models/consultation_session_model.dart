@@ -12,9 +12,11 @@ class ConsultationSessionModel {
     this.sessionStartRequestedAt,
     this.sessionStartRespondedAt,
     this.startedAt,
+    this.completedAt,
     this.callStartedAt,
     this.callEndedAt,
     this.followUpDate,
+    this.followUpScheduledAt,
     this.followUpEndedAt,
   });
 
@@ -24,9 +26,11 @@ class ConsultationSessionModel {
   final DateTime? sessionStartRequestedAt;
   final DateTime? sessionStartRespondedAt;
   final DateTime? startedAt;
+  final DateTime? completedAt;
   final DateTime? callStartedAt;
   final DateTime? callEndedAt;
   final DateTime? followUpDate;
+  final DateTime? followUpScheduledAt;
   final DateTime? followUpEndedAt;
 
   bool get isInProgress => bookingStatus == 'inProgress';
@@ -68,9 +72,11 @@ class ConsultationSessionModel {
       sessionStartRequestedAt: _date(map['session_start_requested_at']),
       sessionStartRespondedAt: _date(map['session_start_responded_at']),
       startedAt: _date(map['started_at']),
+      completedAt: _date(map['completed_at']),
       callStartedAt: _date(map['call_started_at']),
       callEndedAt: _date(map['call_ended_at']),
       followUpDate: _dateOnlyValue(map['follow_up_date']),
+      followUpScheduledAt: _date(map['follow_up_scheduled_at']),
       followUpEndedAt: _date(map['follow_up_ended_at']),
     );
   }

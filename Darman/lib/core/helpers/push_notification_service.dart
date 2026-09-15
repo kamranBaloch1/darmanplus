@@ -46,9 +46,12 @@ class PushNotificationService {
   StreamSubscription<CallEvent?>? _callKitSubscription;
   final StreamController<NativeIncomingCallEvent> _callKitActions =
       StreamController<NativeIncomingCallEvent>.broadcast();
+  final StreamController<Map<String, dynamic>> _chatNotificationTaps =
+      StreamController<Map<String, dynamic>>.broadcast();
   final Map<String, NativeIncomingCallAction> _pendingCallKitActions = {};
   RemoteMessage? _launchMessage;
   Map<String, dynamic>? _foregroundTapData;
+  DateTime? _lastChatNotificationTapAt;
   final Map<String, int> _openChatBookings = {};
   bool? _fullScreenCallPermissionGranted;
 
@@ -312,6 +315,8 @@ class PushNotificationService {
       _fullScreenCallPermissionGranted;
   Stream<NativeIncomingCallEvent> get nativeIncomingCallActions =>
       _callKitActions.stream;
+  Stream<Map<String, dynamic>> get chatNotificationTaps =>
+      _chatNotificationTaps.stream;
   bool get hasPendingAcceptedIncomingCall => _pendingCallKitActions.values
       .contains(NativeIncomingCallAction.accept);
 
@@ -338,6 +343,15 @@ class PushNotificationService {
   bool _isChatOpen(Map<String, dynamic> data) {
     final bookingId = data['booking_id']?.toString().trim() ?? '';
     return bookingId.isNotEmpty && _openChatBookings.containsKey(bookingId);
+  }
+
+  void _rememberNotificationTap(Map<String, dynamic> data) {
+    _foregroundTapData = data;
+    if (data['type']?.toString() == 'chat_message' &&
+        (data['booking_id']?.toString().trim().isNotEmpty ?? false)) {
+      _lastChatNotificationTapAt = DateTime.now();
+      _chatNotificationTaps.add(Map<String, dynamic>.from(data));
+    }
   }
 
   Future<void> initialize() async {
@@ -398,9 +412,9 @@ class PushNotificationService {
     if (payload == null || payload.isEmpty) return;
 
     try {
-      _foregroundTapData = Map<String, dynamic>.from(
+      _rememberNotificationTap(Map<String, dynamic>.from(
         jsonDecode(payload) as Map,
-      );
+      ));
     } catch (_) {}
   },
 );
@@ -417,9 +431,12 @@ class PushNotificationService {
         localLaunchPayload != null &&
         localLaunchPayload.isNotEmpty) {
       try {
-        _foregroundTapData = Map<String, dynamic>.from(
+        final data = Map<String, dynamic>.from(
           jsonDecode(localLaunchPayload) as Map,
         );
+        if (data['type']?.toString() == 'incoming_video_call') {
+          _rememberNotificationTap(data);
+        }
       } catch (_) {}
     }
 
@@ -454,6 +471,7 @@ class PushNotificationService {
     _openedAppSubscription ??=
         FirebaseMessaging.onMessageOpenedApp.listen((message) {
       _launchMessage = message;
+      _rememberNotificationTap(Map<String, dynamic>.from(message.data));
     });
 
     _foregroundSubscription ??= FirebaseMessaging.onMessage.listen(
@@ -738,6 +756,27 @@ class PushNotificationService {
     return null;
   }
 
+  Map<String, dynamic>? takePendingChatNotificationData() {
+    final localData = _foregroundTapData;
+    if (localData?['type']?.toString() == 'chat_message') {
+      final tappedAt = _lastChatNotificationTapAt;
+      _foregroundTapData = null;
+      _lastChatNotificationTapAt = null;
+      if (tappedAt == null ||
+          DateTime.now().difference(tappedAt) > const Duration(minutes: 2)) {
+        return null;
+      }
+      return Map<String, dynamic>.from(localData!);
+    }
+
+    final remoteData = _launchMessage?.data;
+    if (remoteData?['type']?.toString() == 'chat_message') {
+      _launchMessage = null;
+      return Map<String, dynamic>.from(remoteData!);
+    }
+    return null;
+  }
+
   Future<bool> requestFullScreenCallPermission() async {
     if (!Platform.isAndroid) return true;
     final granted = await FlutterCallkitIncoming.requestFullIntentPermission();
@@ -780,5 +819,6 @@ class PushNotificationService {
     await _foregroundSubscription?.cancel();
     await _callKitSubscription?.cancel();
     await _callKitActions.close();
+    await _chatNotificationTaps.close();
   }
 }

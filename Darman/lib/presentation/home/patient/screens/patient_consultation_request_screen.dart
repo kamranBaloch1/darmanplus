@@ -8,6 +8,7 @@ import 'package:darmaan/presentation/home/chat/chat_room.dart';
 import 'package:darmaan/presentation/home/patient/repository/patient_repository.dart';
 import 'package:darmaan/presentation/home/patient/screens/doctor_details_screen.dart';
 import 'package:darmaan/presentation/home/wallet/screens/add_money_screen.dart';
+import 'package:darmaan/presentation/home/wallet/screens/jazzcash_payment_screen.dart';
 import 'package:darmaan/widgets/guest_access.dart';
 import 'package:darmaan/widgets/app_shimmer.dart';
 import 'package:flutter/material.dart';
@@ -283,7 +284,7 @@ class _PatientConsultationRequestScreenState
 
     final added = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
-        builder: (_) => AddMoneyScreen(currentBalance: balance),
+        builder: (_) => JazzCashPaymentScreen(),
       ),
     );
     if (added == true && mounted) await _refreshPatientProfile();
@@ -1364,24 +1365,27 @@ class _WalletFeeBar extends StatelessWidget {
     child: Row(
       children: [
         Expanded(
-          child: _WalletMetric(
-            icon: Icons.account_balance_wallet_outlined,
-            label: 'Wallet',
-            value: balance == null ? 'Sign in' : 'Rs. ${_money(balance!)}',
-            trailing: TextButton(
-              onPressed: onAdd,
-              style: TextButton.styleFrom(
-                minimumSize: const Size(40, 30),
-                padding: const EdgeInsets.symmetric(horizontal: 7),
-                foregroundColor: AppColors.brand,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
-              ),
-              child: Text(
-                'Add',
-                style: GoogleFonts.outfit(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w500,
+          child: GestureDetector(
+            onTap: onAdd,
+            child: _WalletMetric(
+              icon: Icons.account_balance_wallet_outlined,
+              label: 'Wallet',
+              value: balance == null ? 'Sign in' : 'Rs. ${_money(balance!)}',
+              trailing: TextButton(
+                onPressed: onAdd,
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(40, 30),
+                  padding: const EdgeInsets.symmetric(horizontal: 7),
+                  foregroundColor: AppColors.brand,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: Text(
+                  'Add',
+                  style: GoogleFonts.outfit(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ),

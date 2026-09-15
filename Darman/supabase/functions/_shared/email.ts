@@ -5,27 +5,32 @@ type EmailOptions = {
   html: string;
 };
 
+export type EmailResult = {
+  sent: boolean;
+  reason?: string;
+};
+
 export async function sendEmail({
   to,
   subject,
   text,
   html,
-}: EmailOptions): Promise<boolean> {
+}: EmailOptions): Promise<EmailResult> {
   const apiKey = Deno.env.get("RESEND_API_KEY")?.trim();
   if (!apiKey) {
     console.warn("[email] RESEND_API_KEY is not set");
-    return false;
+    return { sent: false, reason: "RESEND_API_KEY is not set" };
   }
 
   const recipients = Array.isArray(to) ? to : [to];
   const cleanRecipients = recipients.map((item) => item.trim()).filter(Boolean);
   if (!cleanRecipients.length) {
     console.warn("[email] no recipients configured");
-    return false;
+    return { sent: false, reason: "No admin email configured" };
   }
 
   const from = Deno.env.get("DARMAN_ALERT_FROM_EMAIL")?.trim() ||
-    "Darman Alerts <onboarding@resend.dev>";
+    "onboarding@resend.dev";
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -42,10 +47,10 @@ export async function sendEmail({
     }),
   });
 
-  if (response.ok) return true;
+  if (response.ok) return { sent: true };
   const errorBody = await response.text();
   console.error("[email] Resend failed", errorBody);
-  throw new Error(`Email send failed: ${errorBody}`);
+  return { sent: false, reason: errorBody };
 }
 
 export function adminAlertEmails(): string[] {

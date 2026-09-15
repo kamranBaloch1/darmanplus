@@ -80,6 +80,18 @@ class AppErrorMessage {
       return 'Your wallet balance is insufficient for this consultation.';
     }
 
+    if (lower.contains('limited message allowance')) {
+      return 'You have used your 5 message allowance for this consultation.';
+    }
+
+    if (lower.contains('waiting-period message limit')) {
+      return 'You have used your 5 waiting-period messages. The chat fully opens on the follow-up date.';
+    }
+
+    if (lower.contains('pre-consultation message limit')) {
+      return 'You have used your 15 messages before the consultation starts.';
+    }
+
     if (_containsAny(lower, const [
       'duplicate key',
       'already exists',

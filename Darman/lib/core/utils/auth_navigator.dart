@@ -1,6 +1,7 @@
 import 'package:darmaan/core/helpers/patient_completion_coordinator.dart';
 import 'package:darmaan/core/helpers/patient_session_start_coordinator.dart';
 import 'package:darmaan/core/helpers/push_notification_service.dart';
+import 'package:darmaan/core/helpers/chat_notification_coordinator.dart';
 import 'package:darmaan/core/helpers/doctor_rating_coordinator.dart';
 import 'package:darmaan/core/helpers/consultation_progress_coordinator.dart';
 import 'package:darmaan/core/helpers/follow_up_end_coordinator.dart';
@@ -77,11 +78,13 @@ class AuthNavigator {
       target = const PatientProfileSetupScreen();
     } else if (user.isPatient) {
       target = const IncomingCallCoordinator(
-        child: ConsultationProgressCoordinator(
-          child: FollowUpEndCoordinator(
-            child: PatientSessionStartCoordinator(
-              child: PatientCompletionCoordinator(
-                child: PatientHomeScreen(),
+        child: ChatNotificationCoordinator(
+          child: ConsultationProgressCoordinator(
+            child: FollowUpEndCoordinator(
+              child: PatientSessionStartCoordinator(
+                child: PatientCompletionCoordinator(
+                  child: PatientHomeScreen(),
+                ),
               ),
             ),
           ),
@@ -93,10 +96,12 @@ class AuthNavigator {
       target = const DoctorVerificationPendingScreen();
     } else {
       target = const IncomingCallCoordinator(
-        child: ConsultationProgressCoordinator(
-          child: FollowUpEndCoordinator(
-            child: DoctorRatingCoordinator(
-              child: DoctorHomeScreen(),
+        child: ChatNotificationCoordinator(
+          child: ConsultationProgressCoordinator(
+            child: FollowUpEndCoordinator(
+              child: DoctorRatingCoordinator(
+                child: DoctorHomeScreen(),
+              ),
             ),
           ),
         ),

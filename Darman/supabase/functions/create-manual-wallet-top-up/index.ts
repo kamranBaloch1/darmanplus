@@ -132,8 +132,13 @@ Deno.serve(async (req) => {
       `Manual top-up created successfully for user ${user.id}`,
     );
 
+    let emailAlert = {
+      sent: false,
+      reason: "Email was not attempted",
+    };
+
     try {
-      await notifyAdminAboutManualTopUp({
+      emailAlert = await notifyAdminAboutManualTopUp({
         topUp: data,
         receiptUrl,
         userId: user.id,
@@ -145,6 +150,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         top_up: data,
+        email_alert: emailAlert,
       }),
       {
         status: 200,
@@ -180,11 +186,11 @@ async function notifyAdminAboutManualTopUp({
   topUp: Record<string, unknown>;
   receiptUrl: string;
   userId: string;
-}) {
+}): Promise<{ sent: boolean; reason?: string }> {
   const to = adminAlertEmails();
   if (!to.length) {
     console.warn("MANUAL TOP-UP EMAIL SKIPPED: no admin recipient configured");
-    return;
+    return { sent: false, reason: "No admin email configured" };
   }
 
   const admin = createClient(
@@ -203,7 +209,7 @@ async function notifyAdminAboutManualTopUp({
   const email = patient?.email?.toString().trim() || "";
   const requestId = topUp?.id?.toString() || "new request";
 
-  const sent = await sendEmail({
+  const result = await sendEmail({
     to,
     subject: "New manual wallet top-up request",
     text:
@@ -211,7 +217,8 @@ async function notifyAdminAboutManualTopUp({
     html:
       `<h2>New manual wallet top-up request</h2><p>A patient submitted a receipt for review.</p><ul><li><strong>Patient:</strong> ${escapeHtml(patientName)}</li><li><strong>Phone:</strong> ${escapeHtml(phone)}</li><li><strong>Email:</strong> ${escapeHtml(email || "-")}</li><li><strong>Request ID:</strong> ${escapeHtml(requestId)}</li></ul><p><a href="${escapeHtml(receiptUrl)}">Open receipt</a></p><p>Open Darman Admin to verify the payment.</p>`,
   });
-  console.log("MANUAL TOP-UP EMAIL RESULT:", { sent, to, requestId });
+  console.log("MANUAL TOP-UP EMAIL RESULT:", { result, to, requestId });
+  return result;
 }
 
 function escapeHtml(value: string) {

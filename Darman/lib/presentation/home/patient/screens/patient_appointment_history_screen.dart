@@ -1,11 +1,13 @@
 import 'package:darmaan/core/models/booking_model.dart';
 import 'package:darmaan/core/models/user_model.dart';
 import 'package:darmaan/core/theme/app_colors.dart';
+import 'package:darmaan/presentation/home/chat/chat_room.dart';
 import 'package:darmaan/presentation/home/patient/repository/patient_repository.dart';
 import 'package:darmaan/presentation/home/patient/screens/doctor_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:darmaan/widgets/app_icon.dart';
 import 'package:darmaan/widgets/app_shimmer.dart';
+import 'package:darmaan/widgets/unread_message_badge.dart';
 import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -165,6 +167,24 @@ class _PatientAppointmentHistoryScreenState
     ));
   }
 
+  void _openChat(BookingModel booking) {
+    final doctor = _doctors[booking.doctorId];
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChatRoomScreen(
+          bookingId: booking.id,
+          peerName: doctor?.name ?? 'Your doctor',
+          peerAvatarUrl: doctor?.profileImage,
+          peerSubtitle: doctor?.specialization ?? 'Doctor',
+          peerVerified: doctor?.isDoctorVerified == true,
+          onPeerTap: doctor == null ? null : () => _openDoctor(booking),
+          openFromHistory: true,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -297,6 +317,7 @@ class _PatientAppointmentHistoryScreenState
               _expandedBookingId = _expandedBookingId == booking.id ? null : booking.id;
             }),
             onDoctorTap: () => _openDoctor(booking),
+            onChatTap: () => _openChat(booking),
           );
         },
       ),
@@ -312,6 +333,7 @@ class _HistoryCard extends StatelessWidget {
     required this.expanded,
     required this.onTap,
     required this.onDoctorTap,
+    required this.onChatTap,
   });
 
   final BookingModel booking;
@@ -320,6 +342,7 @@ class _HistoryCard extends StatelessWidget {
   final bool expanded;
   final VoidCallback onTap;
   final VoidCallback onDoctorTap;
+  final VoidCallback onChatTap;
 
   DateTime get _date =>
       (booking.completedAt ?? booking.cancelledAt ?? booking.updatedAt).toLocal();
@@ -360,43 +383,47 @@ class _HistoryCard extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(children: [
-              Row(children: [
-                CircleAvatar(
-                  radius: 23,
-                  backgroundColor: const Color(0xFFF1F3F5),
-                  backgroundImage: hasImage
-                      ? CachedNetworkImageProvider(doctor!.profileImage!)
-                      : null,
-                  child: hasImage ? null : AppIcon(Icons.person_rounded,
-                    color: AppColors.textSecondary, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      Flexible(child: Text(
-                        doctor?.name ?? 'Doctor unavailable',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.outfit(
-                          fontSize: 15.5, fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                      )),
-                      if (doctor?.isDoctorVerified == true) ...[
-                        const SizedBox(width: 5),
-                        AppIcon(Icons.verified_rounded, size: 16, color: AppColors.brand),
-                      ],
-                    ]),
-                    const SizedBox(height: 3),
-                    Text(_doctorSubtitle,
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(fontSize: 12,
-                        color: AppColors.textSecondary)),
-                  ],
-                )),
-              ]),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: doctor == null ? null : onDoctorTap,
+                child: Row(children: [
+                  CircleAvatar(
+                    radius: 23,
+                    backgroundColor: const Color(0xFFF1F3F5),
+                    backgroundImage: hasImage
+                        ? CachedNetworkImageProvider(doctor!.profileImage!)
+                        : null,
+                    child: hasImage ? null : AppIcon(Icons.person_rounded,
+                      color: AppColors.textSecondary, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Flexible(child: Text(
+                          doctor?.name ?? 'Doctor unavailable',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(
+                            fontSize: 15.5, fontWeight: FontWeight.w500,
+                            color: AppColors.textPrimary,
+                          ),
+                        )),
+                        if (doctor?.isDoctorVerified == true) ...[
+                          const SizedBox(width: 5),
+                          AppIcon(Icons.verified_rounded, size: 16, color: AppColors.brand),
+                        ],
+                      ]),
+                      const SizedBox(height: 3),
+                      Text(_doctorSubtitle,
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(fontSize: 12,
+                          color: AppColors.textSecondary)),
+                    ],
+                  )),
+                ]),
+              ),
               const SizedBox(height: 14),
               Row(children: [
                 Container(
@@ -470,13 +497,43 @@ class _HistoryCard extends StatelessWidget {
                       const SizedBox(height: 10),
                       _DetailRow(label: 'Reason', value: booking.cancellationReason!.trim()),
                     ],
-                    if (doctor != null) ...[
-                      const SizedBox(height: 10),
-                      SizedBox(width: double.infinity, child: TextButton(
-                        onPressed: onDoctorTap,
-                        child: const Text('View doctor profile'),
-                      )),
-                    ],
+                    const SizedBox(height: 13),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: UnreadMessageBadge(
+                        bookingId: booking.id,
+                        isDoctor: false,
+                        child: OutlinedButton.icon(
+                          onPressed: onChatTap,
+                          icon: const AppIcon(
+                            Icons.chat_bubble_outline_rounded,
+                            size: 17,
+                          ),
+                          label: Text(
+                            'View chat',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.brand,
+                            backgroundColor: Colors.white,
+                            side: BorderSide(
+                              color: AppColors.brand.withValues(alpha: 0.25),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ),
+                    ),
                   ]),
                 ),
               ],

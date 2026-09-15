@@ -22,7 +22,8 @@ class ChatRepository {
   final SupabaseClient _supabase;
   static const _uuid = Uuid();
   static const int pageSize = 40;
-  static const int preSessionMessageLimit = 20;
+  static const int preSessionMessageLimit = 15;
+  static const int upcomingFollowUpMessageLimit = 5;
   static final Map<String, _SignedUrlCacheEntry> _signedUrlCache = {};
 
   String get currentUserId {
@@ -88,8 +89,10 @@ class ChatRepository {
           .from('bookings')
           .select(
             'id, status, session_start_status, session_start_requested_at, '
-            'session_start_responded_at, started_at, call_started_at, '
-            'call_ended_at, follow_up_date, follow_up_ended_at',
+            'session_start_responded_at, started_at, completed_at, '
+            'call_started_at, '
+            'call_ended_at, follow_up_date, follow_up_scheduled_at, '
+            'follow_up_ended_at',
           )
           .eq('id', bookingId)
           .single();

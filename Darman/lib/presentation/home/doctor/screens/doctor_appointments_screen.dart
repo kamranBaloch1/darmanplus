@@ -440,15 +440,17 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
 
   void _openChat(BookingModel booking) {
     final patient = _patientsById[booking.patientId];
-    if (patient == null) return;
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ChatRoomScreen(
           bookingId: booking.id,
-          peerName: patient.name,
-          peerAvatarUrl: patient.profileImage,
+          peerName: patient?.name ?? 'Patient',
+          peerAvatarUrl: patient?.profileImage,
           peerSubtitle: 'Patient',
+          openFromHistory:
+              booking.status == BookingStatus.completed ||
+              booking.status == BookingStatus.cancelled,
         ),
       ),
     );
@@ -930,6 +932,7 @@ class _AppointmentList extends StatelessWidget {
               booking: booking,
               patient: patientsById[booking.patientId],
               rating: ratingsByBookingId[booking.id],
+              onOpenChat: () => onOpenChat(booking),
             );
           }
           return Padding(
@@ -1034,10 +1037,12 @@ class _DoctorHistoryCard extends StatefulWidget {
     required this.booking,
     required this.patient,
     required this.rating,
+    required this.onOpenChat,
   });
   final BookingModel booking;
   final UserModel? patient;
   final int? rating;
+  final VoidCallback onOpenChat;
 
   @override
   State<_DoctorHistoryCard> createState() => _DoctorHistoryCardState();
@@ -1248,6 +1253,43 @@ class _DoctorHistoryCardState extends State<_DoctorHistoryCard> {
                             value: booking.cancellationReason!.trim(),
                           ),
                         ],
+                        const SizedBox(height: 13),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: UnreadMessageBadge(
+                            bookingId: booking.id,
+                            isDoctor: true,
+                            child: OutlinedButton.icon(
+                              onPressed: widget.onOpenChat,
+                              icon: const AppIcon(
+                                Icons.chat_bubble_outline_rounded,
+                                size: 17,
+                              ),
+                              label: Text(
+                                'View chat',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.brand,
+                                backgroundColor: Colors.white,
+                                side: BorderSide(
+                                  color: AppColors.brand.withValues(alpha: 0.25),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),

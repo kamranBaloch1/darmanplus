@@ -44,6 +44,7 @@ class ChatRoomScreen extends StatefulWidget {
     this.peerVerified = false,
     this.onPeerTap,
     this.onReturnToCall,
+    this.openFromHistory = false,
   });
 
   final String bookingId;
@@ -55,6 +56,7 @@ class ChatRoomScreen extends StatefulWidget {
   final bool peerVerified;
   final VoidCallback? onPeerTap;
   final VoidCallback? onReturnToCall;
+  final bool openFromHistory;
 
   @override
   State<ChatRoomScreen> createState() => _ChatRoomScreenState();
@@ -226,11 +228,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
               });
               _scheduleSessionRequestExpiry(session);
 
-              if (_isDoctor &&
+              if (!widget.openFromHistory &&
+                  _isDoctor &&
                   session.bookingStatus == 'completed' &&
                   !session.hasUnendedFollowUp) {
                 _handleConsultationCompleted();
-              } else if (!_isDoctor &&
+              } else if (!widget.openFromHistory &&
+                  !_isDoctor &&
                   session.bookingStatus == 'completed' &&
                   !session.hasUnendedFollowUp) {
                 _leaveCompletedPatientChat();
@@ -632,8 +636,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
     await ServerClockService.instance.synchronize(force: true);
     final freshSession = await _repository.getSession(widget.bookingId);
-    final isFollowUp = freshSession.hasUnendedFollowUp;
-    final freshRoom = isFollowUp
+    final isLimitedCompletedChat =
+        freshSession.bookingStatus == 'completed' &&
+        (freshSession.hasUnendedFollowUp || freshSession.followUpDate == null);
+    final freshRoom = isLimitedCompletedChat
         ? await _repository.getOrCreateRoom(widget.bookingId)
         : _room;
 
@@ -644,15 +650,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       });
     }
 
-    if (!isFollowUp && freshSession.bookingStatus == 'completed') {
+    if (!isLimitedCompletedChat && freshSession.bookingStatus == 'completed') {
       throw const ChatException(
         'The follow-up chat is not available for this booking.',
       );
     }
-    if (!isFollowUp) {
+    if (!isLimitedCompletedChat) {
       return false;
     }
-    if (!freshSession.isFollowUpOpen) {
+    if (freshSession.followUpDate != null &&
+        !freshSession.isFollowUpOpen &&
+        !freshSession.isFollowUpUpcoming) {
       throw const ChatException('The follow-up chat is not open yet.');
     }
     return true;
@@ -1137,8 +1145,80 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   }
 
   bool get _preSessionLimitReached {
-    return _session?.bookingStatus == 'accepted' &&
+    return _isPreConsultationChat &&
         _myPreSessionMessageCount >= ChatRepository.preSessionMessageLimit;
+  }
+
+  bool get _isPreConsultationChat {
+    final status = _session?.bookingStatus;
+    return (status == 'pending' || status == 'accepted') &&
+        _session?.startedAt == null;
+  }
+
+  int get _myUpcomingFollowUpMessageCount {
+    final scheduledAt = _session?.followUpScheduledAt;
+    return _messages
+        .where(
+          (message) =>
+              message.senderId == _repository.currentUserId &&
+              message.type != MessageType.system &&
+              message.status != MessageStatus.failed &&
+              (scheduledAt == null || !message.createdAt.isBefore(scheduledAt)),
+        )
+        .length;
+  }
+
+  bool get _upcomingFollowUpLimitReached {
+    return _session?.isFollowUpUpcoming == true &&
+        _myUpcomingFollowUpMessageCount >=
+            ChatRepository.upcomingFollowUpMessageLimit;
+  }
+
+  bool get _isPostConsultationChat {
+    return _session?.bookingStatus == 'completed' &&
+        _session?.followUpDate == null;
+  }
+
+  int get _myPostConsultationMessageCount {
+    final completedAt = _session?.completedAt;
+    return _messages
+        .where(
+          (message) =>
+              message.senderId == _repository.currentUserId &&
+              message.type != MessageType.system &&
+              message.status != MessageStatus.failed &&
+              (completedAt == null || !message.createdAt.isBefore(completedAt)),
+        )
+        .length;
+  }
+
+  bool get _postConsultationLimitReached {
+    return _isPostConsultationChat &&
+        _myPostConsultationMessageCount >=
+            ChatRepository.upcomingFollowUpMessageLimit;
+  }
+
+  int? get _messageCounterUsed {
+    if (_isPreConsultationChat) {
+      return _myPreSessionMessageCount;
+    }
+    if (_session?.isFollowUpUpcoming == true) {
+      return _myUpcomingFollowUpMessageCount;
+    }
+    if (_isPostConsultationChat) {
+      return _myPostConsultationMessageCount;
+    }
+    return null;
+  }
+
+  int? get _messageCounterTotal {
+    if (_isPreConsultationChat) {
+      return ChatRepository.preSessionMessageLimit;
+    }
+    if (_session?.isFollowUpUpcoming == true || _isPostConsultationChat) {
+      return ChatRepository.upcomingFollowUpMessageLimit;
+    }
+    return null;
   }
 
   // ===========================================================================
@@ -2359,7 +2439,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   Widget build(BuildContext context) {
     final canCompose =
         (_room?.isActive == true && _session?.isEnded != true) ||
-        _session?.isFollowUpOpen == true;
+        _session?.hasUnendedFollowUp == true ||
+        _isPostConsultationChat;
     return Scaffold(
       // WhatsApp-like warm neutral conversation surface.
       backgroundColor: const Color(0xFFF0EEEA),
@@ -2553,7 +2634,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                 // ---------------------------------------------------------
                 // INPUT
                 // ---------------------------------------------------------
-                if (canCompose && !_preSessionLimitReached)
+                if (_messageCounterUsed != null && _messageCounterTotal != null)
+                  _LimitedMessageCounter(
+                    used: _messageCounterUsed!,
+                    total: _messageCounterTotal!,
+                  ),
+                if (canCompose &&
+                    !_preSessionLimitReached &&
+                    !_upcomingFollowUpLimitReached &&
+                    !_postConsultationLimitReached)
                   _Composer(
                     controller: _textController,
                     reply: _replyingTo,
@@ -2582,10 +2671,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                     busy: _sessionActionBusy,
                     onStart: _requestSessionStart,
                   )
+                else if (_upcomingFollowUpLimitReached)
+                  _ClosedNotice(
+                    message:
+                        'Waiting-period message limit reached. Follow-up chat fully opens on ${DateFormat('d MMMM yyyy').format(_session!.followUpDate!)}.',
+                  )
+                else if (_postConsultationLimitReached)
+                  const _ClosedNotice(
+                    message:
+                        'Post-consultation message limit reached. You can still view this chat from history.',
+                  )
                 else
                   _ClosedNotice(
                     message: _session?.isFollowUpUpcoming == true
-                        ? 'Follow-up chat unlocks on ${DateFormat('d MMMM yyyy').format(_session!.followUpDate!)}.'
+                        ? 'You can send up to 5 messages before the follow-up date. Video call unlocks on ${DateFormat('d MMMM yyyy').format(_session!.followUpDate!)}.'
                         : null,
                   ),
               ],
@@ -2601,7 +2700,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     final inProgress = _session?.isInProgress == true;
     final canCall = inProgress || _session?.isFollowUpOpen == true;
     final showLockedCall =
-        !_isDoctor && _session?.bookingStatus == 'accepted' && !canCall;
+        ((_session?.bookingStatus == 'accepted' && !_isDoctor) ||
+            _session?.isFollowUpUpcoming == true) &&
+        !canCall;
     final hasActiveCall =
         widget.onReturnToCall != null && _session?.callEndedAt == null;
 
@@ -6019,6 +6120,60 @@ class _MessageLimitNotice extends StatelessWidget {
     }
 
     return 'Message limit reached. The doctor needs to start the consultation to continue.';
+  }
+}
+
+class _LimitedMessageCounter extends StatelessWidget {
+  const _LimitedMessageCounter({
+    required this.used,
+    required this.total,
+  });
+
+  final int used;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final safeUsed = used.clamp(0, total);
+
+    return Container(
+      width: double.infinity,
+      height: 52,
+      color: Colors.transparent,
+      padding: const EdgeInsets.fromLTRB(14, 0, 20, 6),
+      // padding: const EdgeInsets.fromLTRB(left, top, right, bottom)
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: const Color(0xFFE9EBEE),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+            child: Text(
+              '$safeUsed/$total messages used',
+              style: GoogleFonts.outfit(
+                fontSize: 12,
+                height: 1.05,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 // =============================================================================
