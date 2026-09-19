@@ -13,6 +13,7 @@ import 'package:darmaan/presentation/home/doctor/screens/doctor_appointments_scr
 import 'package:darmaan/presentation/home/patient/screens/doctor_reviews_screen.dart';
 import 'package:darmaan/widgets/app_shimmer.dart';
 import 'package:darmaan/widgets/app_icon.dart';
+import 'package:darmaan/widgets/video_dilog.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -188,11 +189,11 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   }
 
   void _openIntroVideo(String url) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black.withValues(alpha: 0.88),
-      builder: (_) => _VideoPlayerDialog(videoUrl: url),
+    showDoctorIntroDialog(
+      context,
+      url: url,
+      doctorName: _user?.name ?? 'Doctor',
+      doctor: _user,
     );
   }
 
@@ -775,7 +776,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  'introduction video',
+                                  'introduction',
                                   style: GoogleFonts.outfit(
                                     fontSize: 13.5.sp,
                                     fontWeight: FontWeight.w500,
@@ -1496,7 +1497,7 @@ class _VideoPlayerDialogState extends State<_VideoPlayerDialog> {
                       child: Row(
                         children: [
                           Text(
-                            'introduction video',
+                            'introduction',
                             style: GoogleFonts.outfit(
                               fontSize: 13.sp,
                               fontWeight: FontWeight.w500,

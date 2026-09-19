@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:darmaan/core/constants/specializations.dart';
@@ -11,8 +12,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:video_compress/video_compress.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 
 class EditDoctorProfileScreen extends StatefulWidget {
   final UserModel currentUser;
@@ -38,12 +42,15 @@ class _EditDoctorProfileScreenState extends State<EditDoctorProfileScreen> {
   late final List<DoctorSpecialization> _specializationOptions;
 
   File? _croppedPhoto;
-  File? _pickedVideo;
-  String? _pickedVideoName;
+  File? _pickedIntroMedia;
+  String? _pickedIntroMediaName;
+  String? _pickedIntroMediaType;
+  String? _uploadedIntroType;
 
   bool isSaving = false;
   bool isCropping = false;
   bool _isCompressingVideo = false;
+  bool _isUploadingIntro = false;
   double _compressionProgress = 0;
   Subscription? _compressionSubscription;
 
@@ -215,8 +222,9 @@ void initState() {
     }
 
     setState(() {
-      _pickedVideo = null;
-      _pickedVideoName = null;
+      _pickedIntroMedia = null;
+      _pickedIntroMediaName = null;
+      _pickedIntroMediaType = null;
       _isCompressingVideo = true;
       _compressionProgress = 0;
     });
@@ -255,9 +263,10 @@ void initState() {
       }
       if (!mounted) return;
       setState(() {
-        _pickedVideo = uploadVideo;
-        _pickedVideoName =
-            'Ready to upload • ${(uploadBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+        _pickedIntroMedia = uploadVideo;
+        _pickedIntroMediaType = 'video';
+        _pickedIntroMediaName =
+            'Video ready • ${(uploadBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
       });
     } catch (error) {
       if (mounted) {
@@ -273,6 +282,52 @@ void initState() {
         });
       }
     }
+  }
+
+  Future<void> _pickAudio() async {
+    if (_isCompressingVideo || isSaving) return;
+    final uploaded = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _IntroAudioRecorderDialog(
+        onUpload: (audio) async {
+          await _repository.updateProfile(
+            introMedia: audio,
+            introMediaType: 'audio',
+          );
+        },
+      ),
+    );
+    if (uploaded != true || !mounted) return;
+    setState(() {
+      _pickedIntroMedia = null;
+      _pickedIntroMediaType = null;
+      _pickedIntroMediaName = null;
+      _uploadedIntroType = 'audio';
+    });
+    _showSnack('Audio introduction uploaded');
+  }
+
+  /// Subtitle text for the "Intro video" row, mirroring current pick /
+  /// upload state.
+  String get _videoSubtitle {
+    if (_pickedIntroMediaType == 'video') {
+      return _pickedIntroMediaName ?? 'Video ready';
+    }
+    if (_uploadedIntroType == 'audio') return 'Up to 2 minutes';
+    if (widget.currentUser.introVideoUrl != null) {
+      return 'Video already uploaded — tap to view';
+    }
+    return 'Up to 2 minutes';
+  }
+
+  /// Subtitle text for the "Intro audio" row, mirroring current pick state.
+  String get _audioSubtitle {
+    if (_pickedIntroMediaType == 'audio') {
+      return _pickedIntroMediaName ?? 'Audio ready';
+    }
+    if (_uploadedIntroType == 'audio') return 'Audio introduction uploaded';
+    return 'Upload an audio introduction';
   }
 
   Future<void> _save() async {
@@ -306,6 +361,7 @@ void initState() {
 
     setState(() {
       isSaving = true;
+      _isUploadingIntro = _pickedIntroMedia != null;
     });
 
     try {
@@ -317,15 +373,19 @@ void initState() {
         gender: _gender,
         consultationFee: parsedFee,
         profilePhoto: _croppedPhoto,
-        introVideo: _pickedVideo,
+        introMedia: _pickedIntroMedia,
+        introMediaType: _pickedIntroMediaType,
       );
 
-      if (_pickedVideo != null) {
+      if (_pickedIntroMediaType == 'video') {
         await VideoCompress.deleteAllCache();
       }
 
       if (!mounted) return;
-      setState(() => isSaving = false);
+      setState(() {
+        isSaving = false;
+        _isUploadingIntro = false;
+      });
       await _showProfileSavedDialog();
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
@@ -333,6 +393,7 @@ void initState() {
 
       setState(() {
         isSaving = false;
+        _isUploadingIntro = false;
       });
 
       _showSnack(AppErrorMessage.from(e));
@@ -340,89 +401,90 @@ void initState() {
   }
 
   Future<void> _showProfileSavedDialog() {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: EdgeInsets.symmetric(horizontal: 28.w),
-        child: Container(
-          padding: EdgeInsets.fromLTRB(24.w, 26.h, 24.w, 20.h),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24.r),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x1A0F172A),
-                blurRadius: 28,
-                offset: Offset(0, 12),
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) => Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.symmetric(horizontal: 48.w),
+      child: Container(
+        padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 14.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20.r),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1A0F172A),
+              blurRadius: 28,
+              offset: Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 48.r,
+              height: 48.r,
+              decoration: const BoxDecoration(
+                color: Color(0xFFEAF5FF),
+                shape: BoxShape.circle,
               ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 68.r,
-                height: 68.r,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEAF5FF),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.check_rounded,
-                  color: AppColors.brand,
-                  size: 38.r,
-                ),
+              child: Icon(
+                Icons.check_rounded,
+                color: AppColors.brand,
+                size: 26.r,
               ),
-              SizedBox(height: 18.h),
-              Text(
-                'Profile updated',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
-                  fontSize: 21.sp,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF111827),
-                ),
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              'Profile updated',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                fontSize: 17.sp,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF111827),
               ),
-              SizedBox(height: 8.h),
-              Text(
-                'Your professional information has been saved successfully.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
-                  fontSize: 14.sp,
-                  height: 1.45,
-                  color: const Color(0xFF667085),
-                ),
+            ),
+            SizedBox(height: 5.h),
+            Text(
+              'Your professional information has been saved successfully.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                fontSize: 12.5.sp,
+                height: 1.4,
+                color: const Color(0xFF667085),
               ),
-              SizedBox(height: 22.h),
-              SizedBox(
-                width: double.infinity,
-                height: 50.h,
-                child: FilledButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.brand,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14.r),
-                    ),
-                  ),
-                  child: Text(
-                    'Done',
-                    style: GoogleFonts.outfit(
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w500,
-                    ),
+            ),
+            SizedBox(height: 16.h),
+            SizedBox(
+              width: double.infinity,
+              height: 42.h,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.brand,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
+                child: Text(
+                  'Done',
+                  style: GoogleFonts.outfit(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   void _showSnack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -691,86 +753,45 @@ void initState() {
 
                     _SectionCard(
                       children: [
-                        _FieldLabel('Intro video'),
+                        _FieldLabel('Introduction'),
                         SizedBox(height: 4.h),
                         Text(
-                          'A short clip helps patients feel confident booking with you.',
+                          'Add a short video or audio introduction to help patients feel confident booking with you.',
                           style: GoogleFonts.outfit(
                             fontSize: 12.sp,
                             color: AppColors.textSecondary,
                           ),
                         ),
                         SizedBox(height: 12.h),
-                        InkWell(
-                          onTap: _isCompressingVideo ? null : _pickVideo,
-                          borderRadius: BorderRadius.circular(14.r),
-                          child: Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 14.w,
-                              vertical: 14.h,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _bg,
-                              borderRadius: BorderRadius.circular(14.r),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 40.w,
-                                  height: 40.w,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.brand.withValues(
-                                      alpha: 0.08,
-                                    ),
-                                    borderRadius: BorderRadius.circular(12.r),
-                                  ),
-                                  child: _isCompressingVideo
-                                      ? Padding(
-                                          padding: EdgeInsets.all(10.w),
-                                          child: CircularProgressIndicator(
-                                            value: _compressionProgress > 0
-                                                ? _compressionProgress / 100
-                                                : null,
-                                            strokeWidth: 2.2,
-                                            color: AppColors.brand,
-                                          ),
-                                        )
-                                      : Icon(
-                                          _pickedVideo != null
-                                              ? Icons.check_circle_rounded
-                                              : Icons.videocam_outlined,
-                                          color: AppColors.brand,
-                                          size: 20.sp,
-                                        ),
-                                ),
-                                SizedBox(width: 12.w),
-                                Expanded(
-                                  child: Text(
-                                    _isCompressingVideo
-                                        ? 'Compressing video… ${_compressionProgress.round()}%'
-                                        : _pickedVideoName ??
-                                        (widget.currentUser.introVideoUrl !=
-                                                null
-                                            ? 'Video already uploaded — tap to replace'
-                                            : 'Tap to upload a short video'),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 13.sp,
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                                Icon(
-                                  Icons.chevron_right_rounded,
-                                  size: 18.sp,
-                                  color: Colors.grey.shade400,
-                                ),
-                              ],
-                            ),
-                          ),
+                        _IntroMediaRow(
+                          icon: Icons.videocam_outlined,
+                          title: 'Intro video',
+                          subtitle: _videoSubtitle,
+                          isBusy: _isCompressingVideo ||
+                              (_isUploadingIntro &&
+                                  _pickedIntroMediaType == 'video'),
+                          progress: _isCompressingVideo
+                              ? _compressionProgress
+                              : null,
+                          busyLabel: _isCompressingVideo
+                              ? 'Preparing video… ${_compressionProgress.round()}%'
+                              : 'Uploading video…',
+                          onTap: (_isCompressingVideo || isSaving)
+                              ? null
+                              : _pickVideo,
+                        ),
+                        SizedBox(height: 10.h),
+                        _IntroMediaRow(
+                          icon: Icons.mic_none_rounded,
+                          title: 'Intro audio',
+                          subtitle: _audioSubtitle,
+                          isBusy: _isUploadingIntro &&
+                              _pickedIntroMediaType == 'audio',
+                          progress: null,
+                          busyLabel: 'Uploading audio…',
+                          onTap: (_isCompressingVideo || isSaving)
+                              ? null
+                              : _pickAudio,
                         ),
                       ],
                     ),
@@ -874,6 +895,117 @@ class _FieldLabel extends StatelessWidget {
         fontSize: 12.5.sp,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
+      ),
+    );
+  }
+}
+
+/// A single tappable row in the "Introduction" card — used for both the
+/// video and the audio slot, matching the two-row layout from the design.
+class _IntroMediaRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool isBusy;
+  final double? progress;
+  final String busyLabel;
+  final VoidCallback? onTap;
+
+  const _IntroMediaRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.isBusy,
+    required this.progress,
+    required this.busyLabel,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14.r),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFAFBFD),
+          borderRadius: BorderRadius.circular(14.r),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40.w,
+              height: 40.w,
+              decoration: BoxDecoration(
+                color: AppColors.brand.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: isBusy
+                  ? Padding(
+                      padding: EdgeInsets.all(10.w),
+                      child: CircularProgressIndicator(
+                        value: progress != null && progress! > 0
+                            ? progress! / 100
+                            : null,
+                        strokeWidth: 2.2,
+                        color: AppColors.brand,
+                      ),
+                    )
+                  : Icon(icon, color: AppColors.brand, size: 20.sp),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.outfit(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    isBusy ? busyLabel : subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                      fontSize: 12.sp,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  if (isBusy) ...[
+                    SizedBox(height: 8.h),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10.r),
+                      child: LinearProgressIndicator(
+                        minHeight: 4.h,
+                        value: progress != null && progress! > 0
+                            ? progress! / 100
+                            : null,
+                        backgroundColor:
+                            AppColors.brand.withValues(alpha: .10),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppColors.brand,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 18.sp,
+              color: Colors.grey.shade400,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1730,6 +1862,662 @@ class _GenderChip extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+
+
+
+
+ class _IntroAudioRecorderDialog extends StatefulWidget {
+  const _IntroAudioRecorderDialog({required this.onUpload});
+
+  final Future<void> Function(File audio) onUpload;
+
+  @override
+  State<_IntroAudioRecorderDialog> createState() =>
+      _IntroAudioRecorderDialogState();
+}
+
+class _IntroAudioRecorderDialogState
+    extends State<_IntroAudioRecorderDialog> {
+  final AudioRecorder _recorder = AudioRecorder();
+  AudioPlayer _player = AudioPlayer();
+  Timer? _timer;
+  StreamSubscription<Amplitude>? _amplitudeSubscription;
+  StreamSubscription<PlayerState>? _playbackSubscription;
+  String? _recordingPath;
+  Duration _elapsed = Duration.zero;
+  bool _recording = false;
+  bool _paused = false;
+  bool _ready = false;
+  bool _uploading = false;
+  bool _playing = false;
+  bool _playbackCompleted = false;
+  String? _loadedPlaybackPath;
+  String? _uploadError;
+  double _waveLevel = .12;
+
+  String get _time {
+    final minutes = _elapsed.inMinutes.toString().padLeft(2, '0');
+    final seconds = (_elapsed.inSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  Future<void> _start() async {
+    await _playbackSubscription?.cancel();
+    await _player.stop();
+    _loadedPlaybackPath = null;
+    _playbackCompleted = false;
+    if (mounted) setState(() => _playing = false);
+    if (!await _recorder.hasPermission()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Microphone permission is required')),
+        );
+      }
+      return;
+    }
+    final directory = await getTemporaryDirectory();
+    final path =
+        '${directory.path}/doctor-intro-${DateTime.now().millisecondsSinceEpoch}.m4a';
+    await _recorder.start(
+      const RecordConfig(encoder: AudioEncoder.aacLc),
+      path: path,
+    );
+    if (!mounted) return;
+    setState(() {
+      _recordingPath = path;
+      _recording = true;
+      _paused = false;
+      _ready = false;
+      _elapsed = Duration.zero;
+      _waveLevel = .12;
+    });
+    await _amplitudeSubscription?.cancel();
+    _amplitudeSubscription = _recorder
+        .onAmplitudeChanged(const Duration(milliseconds: 120))
+        .listen((amplitude) {
+          if (!mounted || !_recording || _paused) return;
+          final level = ((amplitude.current + 55) / 55).clamp(.10, 1.0);
+          setState(() => _waveLevel = level);
+        });
+    _runTimer();
+  }
+
+  void _runTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || _paused) return;
+      setState(() => _elapsed += const Duration(seconds: 1));
+      if (_elapsed >= const Duration(minutes: 2)) _stop();
+    });
+  }
+
+  Future<void> _togglePause() async {
+    if (_paused) {
+      await _recorder.resume();
+      _runTimer();
+    } else {
+      await _recorder.pause();
+      _timer?.cancel();
+      if (mounted) setState(() => _waveLevel = .12);
+    }
+    if (mounted) setState(() => _paused = !_paused);
+  }
+
+  Future<void> _stop() async {
+    _timer?.cancel();
+    await _amplitudeSubscription?.cancel();
+    _amplitudeSubscription = null;
+    final path = await _recorder.stop();
+    if (!mounted) return;
+    setState(() {
+      _recordingPath = path ?? _recordingPath;
+      _recording = false;
+      _paused = false;
+      _ready = _elapsed.inSeconds > 0 && _recordingPath != null;
+      _waveLevel = .12;
+    });
+  }
+
+  Future<void> _close() async {
+    if (_uploading) return;
+    _timer?.cancel();
+    await _amplitudeSubscription?.cancel();
+    await _playbackSubscription?.cancel();
+    if (_recording) await _recorder.stop();
+    final path = _recordingPath;
+    if (path != null) {
+      final file = File(path);
+      if (await file.exists()) await file.delete();
+    }
+    if (mounted) Navigator.pop(context);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _amplitudeSubscription?.cancel();
+    _playbackSubscription?.cancel();
+    _recorder.dispose();
+    _player.dispose();
+    super.dispose();
+  }
+
+  Future<void> _togglePlayback() async {
+    final path = _recordingPath;
+    if (path == null || _uploading) return;
+
+    if (_playing) {
+      setState(() => _playing = false);
+      await _player.pause();
+      return;
+    }
+
+    try {
+      if (_loadedPlaybackPath != path || _playbackCompleted) {
+        await _playbackSubscription?.cancel();
+        await _player.dispose();
+        _player = AudioPlayer();
+        await _player.setFilePath(path);
+        await _player.setLoopMode(LoopMode.off);
+        await _player.setVolume(1);
+        _loadedPlaybackPath = path;
+        _playbackCompleted = false;
+        _playbackSubscription = _player.playerStateStream.listen((state) {
+          if (!mounted || !_playing) return;
+          if (state.processingState == ProcessingState.completed) {
+            setState(() {
+              _playing = false;
+              _playbackCompleted = true;
+            });
+          }
+        });
+      }
+      if (!mounted) return;
+      setState(() => _playing = true);
+      unawaited(_player.play());
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _playing = false;
+          _uploadError = 'Could not play this recording. Please record again.';
+        });
+      }
+    }
+  }
+
+  Future<void> _uploadRecording() async {
+    final path = _recordingPath;
+    if (path == null || _uploading) return;
+    await _player.stop();
+    setState(() {
+      _uploading = true;
+      _playing = false;
+      _uploadError = null;
+    });
+    try {
+      await widget.onUpload(File(path));
+      if (mounted) Navigator.pop(context, true);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _uploading = false;
+        _uploadError = AppErrorMessage.from(error);
+      });
+    }
+  }
+
+  Widget _micVisual() {
+    final innerCircle = Container(
+      width: 52.w,
+      height: 52.w,
+      decoration: BoxDecoration(
+        color: AppColors.brand.withValues(alpha: .14),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(Icons.mic_rounded, color: AppColors.brand, size: 26.sp),
+    );
+
+    final glowCircle = Container(
+      width: 84.w,
+      height: 84.w,
+      decoration: BoxDecoration(
+        color: AppColors.brand.withValues(alpha: .06),
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: innerCircle,
+    );
+
+    if (!_ready) {
+      return SizedBox(width: 84.w, height: 84.w, child: glowCircle);
+    }
+
+    return SizedBox(
+      width: 200.w,
+      height: 84.w,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(left: 0, child: _sideWave()),
+          Positioned(right: 0, child: _sideWave()),
+          Positioned(
+            top: 4.h,
+            left: 56.w,
+            child: Icon(Icons.circle, size: 6.sp, color: Colors.blue.shade100),
+          ),
+          Positioned(
+            top: 6.h,
+            right: 50.w,
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              size: 13.sp,
+              color: Colors.green.shade300,
+            ),
+          ),
+          Positioned(
+            bottom: 6.h,
+            left: 50.w,
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              size: 11.sp,
+              color: AppColors.brand.withValues(alpha: .35),
+            ),
+          ),
+          Positioned(
+            bottom: 4.h,
+            right: 56.w,
+            child: Container(
+              width: 5.r,
+              height: 5.r,
+              decoration: BoxDecoration(
+                color: AppColors.brand.withValues(alpha: .25),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              glowCircle,
+              Positioned(
+                right: 2.w,
+                bottom: 2.w,
+                child: Container(
+                  padding: EdgeInsets.all(4.r),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF22C55E),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: Icon(
+                    Icons.check_rounded,
+                    size: 10.sp,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sideWave() {
+    const heights = [10.0, 20.0, 14.0, 7.0];
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: heights
+          .map(
+            (h) => Padding(
+              padding: EdgeInsets.symmetric(horizontal: 2.w),
+              child: Container(
+                width: 3.w,
+                height: h.h,
+                decoration: BoxDecoration(
+                  color: AppColors.brand.withValues(alpha: .25),
+                  borderRadius: BorderRadius.circular(4.r),
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  /// The playback bar shown once a recording is ready: play/pause button and
+  /// waveform sit inside one pill so they read as a single control.
+  Widget _playbackBar() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 4.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Material(
+            color: AppColors.brand,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: _uploading ? null : _togglePlayback,
+              child: Padding(
+                padding: EdgeInsets.all(9.r),
+                child: Icon(
+                  _playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  key: ValueKey(_playing),
+                  color: Colors.white,
+                  size: 18.sp,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: 10.w),
+          SizedBox(
+            width: 200.w,
+            child: _WaveformBars(
+              active: _playing,
+              level: _playing ? .55 : .12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.symmetric(horizontal: 24.w),
+        child: Container(
+          padding: EdgeInsets.fromLTRB(18.w, 8.h, 18.w, 14.h),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: InkWell(
+                  onTap: _close,
+                  borderRadius: BorderRadius.circular(18.r),
+                  child: Container(
+                    padding: EdgeInsets.all(6.r),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF4F6F8),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 16.sp,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+              _micVisual(),
+              SizedBox(height: 4.h),
+              Text(
+                _ready ? 'Introduction recorded' : 'Record introduction',
+                style: GoogleFonts.outfit(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              SizedBox(height: 3.h),
+              Text(
+                _recording
+                    ? (_paused ? 'Recording paused' : 'Recording in progress')
+                    : (_ready
+                        ? 'Your audio is ready to upload'
+                        : 'Speak clearly for your introduction'),
+                style: GoogleFonts.outfit(
+                  fontSize: 11.5.sp,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              SizedBox(height: 10.h),
+              if (_ready)
+                Text(
+                  _time,
+                  style: GoogleFonts.outfit(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                )
+              else
+                Material(
+                  color: const Color(0xFFF4F6F8),
+                  borderRadius: BorderRadius.circular(26.r),
+                  child: Padding(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7.r,
+                        height: 7.r,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFE53935),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      SizedBox(width: 7.w),
+                      Text(
+                        _time,
+                        style: GoogleFonts.outfit(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ),
+              SizedBox(height: 10.h),
+              if (_recording)
+                Center(child: _WaveformBars(active: !_paused, level: _waveLevel))
+              else if (_ready)
+                _playbackBar(),
+              SizedBox(height: 10.h),
+              SizedBox(
+                height: 56.h,
+                child: _recording
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton.filledTonal(
+                            onPressed: _togglePause,
+                            icon: Icon(
+                              _paused
+                                  ? Icons.play_arrow_rounded
+                                  : Icons.pause_rounded,
+                            ),
+                          ),
+                          SizedBox(width: 12.w),
+                          IconButton.filled(
+                            onPressed: _stop,
+                            style: IconButton.styleFrom(
+                              backgroundColor: AppColors.brand,
+                            ),
+                            icon: const Icon(Icons.stop_rounded),
+                          ),
+                        ],
+                      )
+                    : !_ready
+                        ? SizedBox(
+                            width: double.infinity,
+                            height: 46.h,
+                            child: ElevatedButton.icon(
+                              onPressed: _start,
+                              icon: Icon(Icons.mic_rounded, size: 17.sp),
+                              label: Text(
+                                'Start recording',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.brand,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(26.r),
+                                ),
+                              ),
+                            ),
+                          )
+                        : Row(
+                            children: [
+                              Expanded(
+                                child: SizedBox(
+                                  height: 44.h,
+                                  child: OutlinedButton.icon(
+                                    onPressed: _uploading ? null : _start,
+                                   
+                                    label: Text(
+                                      'Record again',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 13.sp,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.textPrimary,
+                                      side: BorderSide(
+                                          color: Colors.grey.shade300),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(26.r),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 8.w),
+                              Expanded(
+                                child: SizedBox(
+                                  height: 44.h,
+                                  child:ElevatedButton(
+  onPressed: _uploading ? null : _uploadRecording,
+  style: ElevatedButton.styleFrom(
+    backgroundColor: AppColors.brand,
+    foregroundColor: Colors.white,
+    elevation: 0,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(26.r),
+    ),
+  ),
+  child: _uploading
+      ? Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 15.w,
+              height: 15.w,
+              child: const CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Text(
+              'Uploading…',
+              style: GoogleFonts.outfit(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        )
+      : Text(
+          'Use recording',
+          style: GoogleFonts.outfit(
+            fontSize: 13.sp,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+),
+                                ),
+                              ),
+                            ],
+                          ),
+              ),
+              if (_uploadError != null) ...[
+                SizedBox(height: 8.h),
+                Text(
+                  _uploadError!,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.outfit(
+                    fontSize: 11.sp,
+                    color: Colors.red.shade600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+class _WaveformBars extends StatelessWidget {
+  final bool active;
+  final double level;
+  final bool alignStart;
+  const _WaveformBars({
+    required this.active,
+    required this.level,
+    this.alignStart = false,
+  });
+
+  static const List<double> _heights = [
+    4, 6, 8, 10, 14, 10, 18, 26, 34, 26, 18, 14, 10, 8,
+    10, 14, 10, 8, 6, 4, 6, 8, 10, 8, 6,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final color =
+        active ? AppColors.brand : AppColors.brand.withValues(alpha: .35);
+    return SizedBox(
+      height: 40.h,
+      child: Row(
+        mainAxisAlignment:
+            alignStart ? MainAxisAlignment.start : MainAxisAlignment.center,
+        children: _heights
+            .map(
+              (h) => Padding(
+                padding: EdgeInsets.symmetric(horizontal: 1.5.w),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 110),
+                  width: 3.w,
+                  height: (active ? (h * (.35 + level)) : h).clamp(4, 40).h,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+              ),
+            )
+            .toList(),
       ),
     );
   }

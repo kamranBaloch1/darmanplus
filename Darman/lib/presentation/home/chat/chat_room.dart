@@ -1093,7 +1093,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   // ===========================================================================
 
   void _showAttachments() {
-    if (_room?.isActive != true) {
+    if (!_canComposeMessages ||
+        _preSessionLimitReached ||
+        _upcomingFollowUpLimitReached ||
+        _postConsultationLimitReached) {
       return;
     }
 
@@ -1132,6 +1135,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   // ===========================================================================
 
   bool get _isDoctor => _room?.doctorId == _repository.currentUserId;
+
+  bool get _canComposeMessages {
+    return (_room?.isActive == true && _session?.isEnded != true) ||
+        _session?.hasUnendedFollowUp == true ||
+        _isPostConsultationChat;
+  }
 
   int get _myPreSessionMessageCount {
     return _messages
@@ -2437,10 +2446,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
   @override
   Widget build(BuildContext context) {
-    final canCompose =
-        (_room?.isActive == true && _session?.isEnded != true) ||
-        _session?.hasUnendedFollowUp == true ||
-        _isPostConsultationChat;
+    final canCompose = _canComposeMessages;
     return Scaffold(
       // WhatsApp-like warm neutral conversation surface.
       backgroundColor: const Color(0xFFF0EEEA),

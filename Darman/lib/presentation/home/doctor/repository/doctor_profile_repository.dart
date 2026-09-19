@@ -53,6 +53,7 @@ class DoctorProfileRepository {
     required String bucket,
     required String uid,
     required String extension,
+    String? contentType,
   }) async {
     final fileName = '${DateTime.now().microsecondsSinceEpoch}.$extension';
     final storagePath = '$uid/$fileName';
@@ -60,10 +61,21 @@ class DoctorProfileRepository {
     await _supabase.storage.from(bucket).upload(
           storagePath,
           file,
-          fileOptions: const FileOptions(upsert: true),
+          fileOptions: FileOptions(upsert: true, contentType: contentType),
         );
 
     return _supabase.storage.from(bucket).getPublicUrl(storagePath);
+  }
+
+  String? _doctorIntroStoragePath(String? publicUrl, String uid) {
+    if (publicUrl == null || publicUrl.trim().isEmpty) return null;
+    final uri = Uri.tryParse(publicUrl.trim());
+    if (uri == null) return null;
+    const marker = '/doctor-intro-videos/';
+    final markerIndex = uri.path.indexOf(marker);
+    if (markerIndex < 0) return null;
+    final path = uri.path.substring(markerIndex + marker.length);
+    return path.startsWith('$uid/') ? path : null;
   }
 
   /// Updates whichever fields are passed. Pass only what changed —
@@ -76,7 +88,8 @@ class DoctorProfileRepository {
     String? gender,
     double? consultationFee,
     File? profilePhoto,
-    File? introVideo,
+    File? introMedia,
+    String? introMediaType,
   }) async {
     final authUser = _supabase.auth.currentUser;
 
@@ -85,6 +98,19 @@ class DoctorProfileRepository {
     }
 
     try {
+      String? previousIntroPath;
+      if (introMedia != null) {
+        final current = await _supabase
+            .from('users')
+            .select('intro_video_url')
+            .eq('uid', authUser.id)
+            .maybeSingle();
+        previousIntroPath = _doctorIntroStoragePath(
+          current?['intro_video_url']?.toString(),
+          authUser.id,
+        );
+      }
+
       final Map<String, dynamic> updates = {
         'updated_at': DateTime.now().toIso8601String(),
       };
@@ -123,17 +149,32 @@ class DoctorProfileRepository {
         updates['profile_image'] = url;
       }
 
-      if (introVideo != null) {
+      if (introMedia != null) {
+        final isAudio = introMediaType == 'audio';
         final url = await _uploadFile(
-          file: introVideo,
+          file: introMedia,
           bucket: 'doctor-intro-videos',
           uid: authUser.id,
-          extension: _safeFileExtension(introVideo, fallback: 'mp4'),
+          extension: _safeFileExtension(
+            introMedia,
+            fallback: isAudio ? 'm4a' : 'mp4',
+          ),
+          contentType: isAudio ? 'audio/*' : 'video/*',
         );
         updates['intro_video_url'] = url;
       }
 
       await _supabase.from('users').update(updates).eq('uid', authUser.id);
+
+      if (previousIntroPath != null) {
+        try {
+          await _supabase.storage
+              .from('doctor-intro-videos')
+              .remove([previousIntroPath]);
+        } catch (_) {
+          // The new introduction is already saved; cleanup can be retried later.
+        }
+      }
 
       final profile = await _supabase
           .from('users')

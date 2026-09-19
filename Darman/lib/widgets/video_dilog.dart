@@ -4,8 +4,39 @@ import 'package:darmaan/core/models/user_model.dart';
 import 'package:darmaan/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:darmaan/widgets/app_icon.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:video_player/video_player.dart';
+
+bool isDoctorIntroAudio(String url) {
+  final path = Uri.tryParse(url)?.path.toLowerCase() ?? url.toLowerCase();
+  return const ['.mp3', '.m4a', '.aac', '.wav', '.ogg', '.flac', '.opus']
+      .any(path.endsWith);
+}
+
+Future<void> showDoctorIntroDialog(
+  BuildContext context, {
+  required String url,
+  required String doctorName,
+  UserModel? doctor,
+  VoidCallback? onViewDetails,
+}) {
+  if (url.trim().isEmpty) return Future.value();
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: Colors.black.withValues(alpha: 0.78),
+    builder: (_) => isDoctorIntroAudio(url)
+        ? _DoctorAudioDialog(
+            url: url,
+            doctorName: doctorName,
+            doctor: doctor,
+            onViewDetails: onViewDetails,
+          )
+        : DoctorVideoDialog.fromUrl(videoUrl: url),
+  );
+}
 
 /// Convenience helper so callers don't need to construct the dialog
 /// themselves. Does nothing if the doctor has no intro video.
@@ -21,13 +52,407 @@ Future<void> showDoctorVideoDialog(
     return Future.value();
   }
 
-  return showDialog(
-    context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.black.withValues(alpha: 0.78),
-    builder: (_) =>
-        DoctorVideoDialog(doctor: doctor, onViewDetails: onViewDetails),
+  return showDoctorIntroDialog(
+    context,
+    url: doctor.introVideoUrl!,
+    doctorName: doctor.name,
+    doctor: doctor,
+    onViewDetails: onViewDetails,
   );
+}
+
+class _DoctorAudioDialog extends StatefulWidget {
+  const _DoctorAudioDialog({
+    required this.url,
+    required this.doctorName,
+    this.doctor,
+    this.onViewDetails,
+  });
+
+  final String url;
+  final String doctorName;
+  final UserModel? doctor;
+  final VoidCallback? onViewDetails;
+
+  @override
+  State<_DoctorAudioDialog> createState() => _DoctorAudioDialogState();
+}
+
+class _DoctorAudioDialogState extends State<_DoctorAudioDialog> {
+  final AudioPlayer _player = AudioPlayer();
+  bool _loading = true;
+  bool _error = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      await _player.setUrl(widget.url);
+      await _player.setLoopMode(LoopMode.off);
+      if (mounted) setState(() => _loading = false);
+    } catch (_) {
+      if (mounted) setState(() { _loading = false; _error = true; });
+    }
+  }
+
+  String _formatDuration(Duration value) {
+    final minutes = value.inMinutes;
+    final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  Future<void> _togglePlayback() async {
+    if (_player.playing) {
+      await _player.pause();
+      return;
+    }
+    if (_player.processingState == ProcessingState.completed) {
+      await _player.seek(Duration.zero);
+    }
+    await _player.play();
+  }
+
+  void _viewProfile() {
+    Navigator.pop(context);
+    widget.onViewDetails?.call();
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: Dialog(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10, right: 26),
+                    child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      ClipOval(
+                        child: SizedBox(
+                          width: 64,
+                          height: 64,
+                          child: widget.doctor?.profileImage != null
+                              ? CachedNetworkImage(
+                                  imageUrl: widget.doctor!.profileImage!,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (_, _, _) => const _AudioAvatarFallback(),
+                                )
+                              : const _AudioAvatarFallback(),
+                        ),
+                      ),
+                      Positioned(
+                        right: 2,
+                        bottom: 3,
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF22C55E),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                widget.doctorName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF101828),
+                                ),
+                              ),
+                            ),
+                            if (widget.doctor?.isDoctorVerified == true) ...[
+                              const SizedBox(width: 6),
+                              const AppIcon(
+                                Icons.verified_rounded,
+                                color: AppColors.brand,
+                                size: 16,
+                              ),
+                            ],
+                          ],
+                        ),
+                        Text(
+                          widget.doctor?.specialization ?? 'Doctor',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            color: const Color(0xFF667085),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F8EF),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const AppIcon(
+                                Icons.headphones_rounded,
+                                color: Color(0xFF12B76A),
+                                size: 14,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Audio Introduction',
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFF12B76A),
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 30,
+                        height: 30,
+                      ),
+                      icon: const AppIcon(
+                        Icons.close_rounded,
+                        size: 21,
+                        color: Color(0xFF667085),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              if (_loading)
+                const SizedBox(
+                  height: 120,
+                  child: Center(
+                    child: CircularProgressIndicator(color: AppColors.brand),
+                  ),
+                )
+              else if (_error)
+                SizedBox(
+                  height: 120,
+                  child: Center(
+                    child: Text(
+                      'Audio could not load',
+                      style: GoogleFonts.outfit(color: Colors.redAccent),
+                    ),
+                  ),
+                )
+              else
+                _DoctorAudioPlayer(
+                  player: _player,
+                  formatDuration: _formatDuration,
+                  onToggle: _togglePlayback,
+                ),
+                 
+
+
+             
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AudioAvatarFallback extends StatelessWidget {
+  const _AudioAvatarFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFEAF2FF),
+      alignment: Alignment.center,
+      child: const AppIcon(
+        Icons.person_rounded,
+        color: AppColors.brand,
+        size: 42,
+      ),
+    );
+  }
+}
+
+class _DoctorAudioPlayer extends StatelessWidget {
+  const _DoctorAudioPlayer({
+    required this.player,
+    required this.formatDuration,
+    required this.onToggle,
+  });
+
+  final AudioPlayer player;
+  final String Function(Duration value) formatDuration;
+  final Future<void> Function() onToggle;
+
+  static const _bars = <double>[
+    7, 10, 15, 22, 31, 20, 36, 46, 28, 18, 12, 8, 14, 24, 38, 50,
+    30, 18, 11, 8, 14, 24, 34, 27, 18, 12, 8,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<PlayerState>(
+      stream: player.playerStateStream,
+      builder: (context, stateSnapshot) {
+        final state = stateSnapshot.data;
+        final playing = state?.playing == true &&
+            state?.processingState != ProcessingState.completed;
+        return StreamBuilder<Duration>(
+          stream: player.positionStream,
+          builder: (context, positionSnapshot) {
+            final position = positionSnapshot.data ?? Duration.zero;
+            final duration = player.duration ?? Duration.zero;
+            final progress = duration.inMilliseconds > 0
+                ? (position.inMilliseconds / duration.inMilliseconds)
+                    .clamp(0.0, 1.0)
+                : 0.0;
+            final activeBars = (_bars.length * progress).round();
+
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 9),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F6FF),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Material(
+                    color: AppColors.brand,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      onTap: onToggle,
+                      customBorder: const CircleBorder(),
+                      child: SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Center(
+                          child: AppIcon(
+                            playing
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          height: 42,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: List.generate(_bars.length, (index) {
+                              return Expanded(
+                                child: Center(
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 120),
+                                    width: 3,
+                                    height: (_bars[index] * .72)
+                                        .clamp(4, 36)
+                                        .toDouble(),
+                                    decoration: BoxDecoration(
+                                      color: index < activeBars
+                                          ? AppColors.brand
+                                          : const Color(0xFFA9CCFA),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              formatDuration(position),
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                color: const Color(0xFF667085),
+                              ),
+                            ),
+                            Text(
+                              formatDuration(duration),
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                color: const Color(0xFF667085),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 /// Popup that plays a doctor's intro video using `video_player` directly,
@@ -35,7 +460,8 @@ Future<void> showDoctorVideoDialog(
 /// time, mute, fullscreen). No chewie dependency — requires only
 /// `video_player` in pubspec.yaml.
 class DoctorVideoDialog extends StatefulWidget {
-  final UserModel doctor;
+  final UserModel? doctor;
+  final String? videoUrl;
 
   /// Retained for source compatibility with existing call sites. The compact
   /// player deliberately keeps profile navigation outside the video frame.
@@ -45,7 +471,13 @@ class DoctorVideoDialog extends StatefulWidget {
     super.key,
     required this.doctor,
     this.onViewDetails,
-  });
+  }) : videoUrl = null;
+
+  const DoctorVideoDialog.fromUrl({
+    super.key,
+    required this.videoUrl,
+  })  : doctor = null,
+        onViewDetails = null;
 
   @override
   State<DoctorVideoDialog> createState() => _DoctorVideoDialogState();
@@ -65,7 +497,9 @@ class _DoctorVideoDialogState extends State<DoctorVideoDialog> {
 
   Future<void> _initializePlayer() async {
     final attempt = ++_loadAttempt;
-    final videoUri = Uri.tryParse(widget.doctor.introVideoUrl?.trim() ?? '');
+    final videoUri = Uri.tryParse(
+      (widget.videoUrl ?? widget.doctor?.introVideoUrl)?.trim() ?? '',
+    );
     if (videoUri == null || !videoUri.hasScheme) {
       if (mounted) {
         setState(() {
