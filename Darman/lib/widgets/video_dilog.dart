@@ -147,8 +147,18 @@ class _DoctorAudioDialogState extends State<_DoctorAudioDialog> {
               Stack(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(top: 10, right: 26),
-                    child: Row(
+                    padding: const EdgeInsets.only(
+                      top: 14,
+                      right: 30,
+                      bottom: 8,
+                      left: 4,
+                    ),
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: widget.onViewDetails == null ? null : _viewProfile,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Stack(
@@ -195,8 +205,8 @@ class _DoctorAudioDialogState extends State<_DoctorAudioDialog> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.outfit(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
                                   color: const Color(0xFF101828),
                                 ),
                               ),
@@ -254,6 +264,8 @@ class _DoctorAudioDialogState extends State<_DoctorAudioDialog> {
                     ),
                   ),
                 ],
+                        ),
+                      ),
                     ),
                   ),
                   Positioned(
@@ -275,7 +287,7 @@ class _DoctorAudioDialogState extends State<_DoctorAudioDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 20),
               if (_loading)
                 const SizedBox(
                   height: 120,

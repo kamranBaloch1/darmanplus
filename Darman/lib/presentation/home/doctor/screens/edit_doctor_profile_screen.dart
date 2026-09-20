@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:io';
-
 import 'package:darmaan/core/constants/specializations.dart';
 import 'package:darmaan/core/models/user_model.dart';
 import 'package:darmaan/core/theme/app_colors.dart';
 import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:darmaan/presentation/home/doctor/repository/doctor_profile_repository.dart';
+import 'package:darmaan/widgets/app_icon.dart';
+import 'package:darmaan/widgets/video_dilog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -210,7 +211,7 @@ void initState() {
     if (_isCompressingVideo || isSaving) return;
     final picked = await ImagePicker().pickVideo(
       source: ImageSource.gallery,
-      maxDuration: const Duration(minutes: 2),
+      maxDuration: const Duration(minutes: 5),
     );
     if (picked == null) return;
 
@@ -314,11 +315,14 @@ void initState() {
     if (_pickedIntroMediaType == 'video') {
       return _pickedIntroMediaName ?? 'Video ready';
     }
-    if (_uploadedIntroType == 'audio') return 'Up to 2 minutes';
-    if (widget.currentUser.introVideoUrl != null) {
+    if (_uploadedIntroType == 'audio') return 'Up to 5 minutes';
+    final savedUrl = widget.currentUser.introVideoUrl?.trim();
+    if (savedUrl != null &&
+        savedUrl.isNotEmpty &&
+        !isDoctorIntroAudio(savedUrl)) {
       return 'Video already uploaded — tap to view';
     }
-    return 'Up to 2 minutes';
+    return 'Up to 5 minutes';
   }
 
   /// Subtitle text for the "Intro audio" row, mirroring current pick state.
@@ -327,6 +331,12 @@ void initState() {
       return _pickedIntroMediaName ?? 'Audio ready';
     }
     if (_uploadedIntroType == 'audio') return 'Audio introduction uploaded';
+    final savedUrl = widget.currentUser.introVideoUrl?.trim();
+    if (savedUrl != null &&
+        savedUrl.isNotEmpty &&
+        isDoctorIntroAudio(savedUrl)) {
+      return 'Audio already uploaded — tap to replace';
+    }
     return 'Upload an audio introduction';
   }
 
@@ -655,7 +665,7 @@ void initState() {
 
                     _SectionCard(
                       children: [
-                        _FieldLabel('Full name'),
+                        _FieldLabel('Full name *'),
                         SizedBox(height: 8.h),
                         _TextField(
                           controller: _nameController,
@@ -664,7 +674,7 @@ void initState() {
 
                         SizedBox(height: 18.h),
 
-                        _FieldLabel('Consultation fee'),
+                        _FieldLabel('Consultation fee *'),
                         SizedBox(height: 8.h),
                         _TextField(
                           controller: _feeController,
@@ -682,7 +692,7 @@ void initState() {
 
                         SizedBox(height: 18.h),
 
-                        _FieldLabel('Specialization'),
+                        _FieldLabel('Specialization *'),
                         SizedBox(height: 8.h),
                         _SpecializationDropdown(
                           value: _specialization,
@@ -728,7 +738,7 @@ void initState() {
 
                         SizedBox(height: 18.h),
 
-                        _FieldLabel('Gender'),
+                        _FieldLabel('Gender *'),
                         SizedBox(height: 8.h),
                         Row(
                           children: [
@@ -965,7 +975,7 @@ class _IntroMediaRow extends StatelessWidget {
                     title,
                     style: GoogleFonts.outfit(
                       fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       color: AppColors.textPrimary,
                     ),
                   ),
@@ -1847,10 +1857,7 @@ class _GenderChip extends StatelessWidget {
                 ? AppColors.brand.withValues(alpha: 0.1)
                 : const Color(0xFFFAFBFD),
             borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(
-              color: isSelected ? AppColors.brand : Colors.transparent,
-              width: 1.4,
-            ),
+           
           ),
           child: Text(
             label,
@@ -1952,7 +1959,7 @@ class _IntroAudioRecorderDialogState
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted || _paused) return;
       setState(() => _elapsed += const Duration(seconds: 1));
-      if (_elapsed >= const Duration(minutes: 2)) _stop();
+      if (_elapsed >= const Duration(minutes: 5)) _stop();
     });
   }
 
@@ -2072,14 +2079,23 @@ class _IntroAudioRecorderDialogState
   }
 
   Widget _micVisual() {
-    final innerCircle = Container(
-      width: 52.w,
-      height: 52.w,
-      decoration: BoxDecoration(
-        color: AppColors.brand.withValues(alpha: .14),
-        shape: BoxShape.circle,
+    final innerCircle = GestureDetector(
+      onTap: null,
+      child: Container(
+        width: 52.w,
+        height: 52.w,
+        decoration: BoxDecoration(
+          color: AppColors.brand.withValues(alpha: .14),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: AppIcon(
+            Icons.mic_rounded,
+            color: AppColors.brand,
+            size: 26.sp,
+          ),
+        ),
       ),
-      child: Icon(Icons.mic_rounded, color: AppColors.brand, size: 26.sp),
     );
 
     final glowCircle = Container(
@@ -2191,38 +2207,131 @@ class _IntroAudioRecorderDialogState
     );
   }
 
-  /// The playback bar shown once a recording is ready: play/pause button and
-  /// waveform sit inside one pill so they read as a single control.
+  /// The waveform, duration and playback control shown only after recording.
   Widget _playbackBar() {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 4.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 8.h),
+     
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          Material(
-            color: AppColors.brand,
-            shape: const CircleBorder(),
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: _uploading ? null : _togglePlayback,
-              child: Padding(
-                padding: EdgeInsets.all(9.r),
-                child: Icon(
-                  _playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                  key: ValueKey(_playing),
-                  color: Colors.white,
-                  size: 18.sp,
+          Center(
+            child: SizedBox(
+              width: 200.w,
+              child: StreamBuilder<Duration>(
+                stream: _player.positionStream,
+                builder: (context, snapshot) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _WaveformBars(
+                    active: _playing,
+                    level: _playing ? .55 : .12,
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      _time,
+                      style: GoogleFonts.outfit(
+                        fontSize: 11.sp,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Material(
+              color: AppColors.brand,
+              shape: const CircleBorder(),
+              child: InkWell(
+                onTap: _uploading ? null : _togglePlayback,
+                customBorder: const CircleBorder(),
+                child: SizedBox(
+                  width: 42.w,
+                  height: 42.w,
+                  child: Center(
+                    child: AppIcon(
+                      _playing
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 23.sp,
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-          SizedBox(width: 10.w),
-          SizedBox(
-            width: 200.w,
-            child: _WaveformBars(
-              active: _playing,
-              level: _playing ? .55 : .12,
+        ],
+      ),
+    );
+  }
+
+  String _formatAudioTime(Duration value) {
+    final minutes = value.inMinutes;
+    final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  Widget _recordingAudioBar() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 8.h),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44.w,
+            height: 44.w,
+            decoration: const BoxDecoration(
+              color: AppColors.brand,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: AppIcon(
+                Icons.mic_rounded,
+                color: Colors.white,
+                size: 23.sp,
+              ),
+            ),
+          ),
+          SizedBox(width: 4.w),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _WaveformBars(
+                  active: _recording && !_paused,
+                  level: _waveLevel,
+                  alignStart: true,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _time,
+                      style: GoogleFonts.outfit(
+                        fontSize: 11.sp,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    Text(
+                      '5:00',
+                      style: GoogleFonts.outfit(
+                        fontSize: 11.sp,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
@@ -2271,7 +2380,7 @@ class _IntroAudioRecorderDialogState
                 _ready ? 'Introduction recorded' : 'Record introduction',
                 style: GoogleFonts.outfit(
                   fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
                 ),
               ),
@@ -2288,51 +2397,12 @@ class _IntroAudioRecorderDialogState
                 ),
               ),
               SizedBox(height: 10.h),
-              if (_ready)
-                Text(
-                  _time,
-                  style: GoogleFonts.outfit(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                )
-              else
-                Material(
-                  color: const Color(0xFFF4F6F8),
-                  borderRadius: BorderRadius.circular(26.r),
-                  child: Padding(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 7.r,
-                        height: 7.r,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFE53935),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      SizedBox(width: 7.w),
-                      Text(
-                        _time,
-                        style: GoogleFonts.outfit(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                ),
-              SizedBox(height: 10.h),
               if (_recording)
-                Center(child: _WaveformBars(active: !_paused, level: _waveLevel))
+                _recordingAudioBar()
               else if (_ready)
-                _playbackBar(),
+                _playbackBar()
+              else
+                _recordingAudioBar(),
               SizedBox(height: 10.h),
               SizedBox(
                 height: 56.h,

@@ -343,7 +343,7 @@ class _DoctorDocumentScreenState extends State<DoctorDocumentScreen> {
                     Text(
                       'Verify your profile',
                       style: GoogleFonts.outfit(
-                        fontSize: 24.sp,
+                        fontSize: 20.sp,
                         fontWeight: FontWeight.w500,
                         color: AppColors.textPrimary,
                         height: 1.2,
@@ -356,7 +356,7 @@ class _DoctorDocumentScreenState extends State<DoctorDocumentScreen> {
                     Text(
                       'Add your professional identity and upload a medical license or certification for admin review.',
                       style: GoogleFonts.outfit(
-                        fontSize: 13.5.sp,
+                        fontSize: 12.5.sp,
                         height: 1.5,
                         color: AppColors.textSecondary,
                       ),
@@ -417,7 +417,7 @@ class _DoctorDocumentScreenState extends State<DoctorDocumentScreen> {
                       ),
                     ),
 
-                    SizedBox(height: 18.h),
+                    SizedBox(height: 50.h),
 
                    Material(
   color: AppColors.brand.withValues(alpha: 0.06),
@@ -455,7 +455,7 @@ class _DoctorDocumentScreenState extends State<DoctorDocumentScreen> {
             child: Text(
               hasDocument ? 'Change Document' : 'Upload verification Document',
               style: GoogleFonts.outfit(
-                fontSize: 14.sp,
+                fontSize: 13.sp,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textPrimary,
               ),
@@ -622,7 +622,7 @@ class _DoctorDocumentScreenState extends State<DoctorDocumentScreen> {
                                 Text(
                                   'Submitting...',
                                   style: GoogleFonts.outfit(
-                                    fontSize: 16.sp,
+                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.w500,
                                     color: Colors.white,
                                   ),
@@ -632,15 +632,15 @@ class _DoctorDocumentScreenState extends State<DoctorDocumentScreen> {
                           : Text(
                               'Submit for verification',
                               style: GoogleFonts.outfit(
-                                fontSize: 16.sp,
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.w500,
                                 color: _canSubmit
                                     ? Colors.white
                                     : Colors.grey.shade400,
                               ),
                             ),
+                      ),
                     ),
-                  ),
                 ),
               ),
             ),

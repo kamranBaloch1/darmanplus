@@ -193,7 +193,7 @@ class _PatientProfileSetupScreenState extends State<PatientProfileSetupScreen> {
                           Text(
                             'Complete your profile',
                             style: GoogleFonts.outfit(
-                              fontSize: 22,
+                              fontSize: 20,
                               fontWeight: FontWeight.w500,
                               letterSpacing: -.5,
                               color: AppColors.textPrimary,
@@ -374,12 +374,9 @@ class _PatientProfileSetupScreenState extends State<PatientProfileSetupScreen> {
         child: Container(
           height: 48,
           alignment: Alignment.center,
-          decoration: BoxDecoration(
+          decoration: BoxDecoration( 
             borderRadius: BorderRadius.circular(13),
-            border: Border.all(
-              color: selected ? AppColors.brand : AppColors.border,
-              width: selected ? 1.4 : 1,
-            ),
+         
           ),
           child: Text(
             value,

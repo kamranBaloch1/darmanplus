@@ -96,14 +96,17 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen> {
                   children: [
                     SizedBox(height: 30.h),
 
-                    Text(
-                      'How will you use Darmaan?',
-                      style: GoogleFonts.outfit(
-                        fontSize: 22.sp,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
-                        height: 1.2,
-                        letterSpacing: -0.6,
+                    Padding(
+                      padding: const EdgeInsets.only(left: 20),
+                      child: Text(
+                        'How will you use Darman?',
+                        style: GoogleFonts.outfit(
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary,
+                          height: 1.2,
+                          letterSpacing: -0.6,
+                        ),
                       ),
                     ),
 
@@ -246,10 +249,7 @@ class _RoleCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(22.r),
-          border: Border.all(
-            color: AppColors.border,
-            width: 1.2,
-          ),
+         
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.035),
@@ -261,8 +261,8 @@ class _RoleCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 50.w,
-              height: 50.w,
+              width: 40.w,
+              height: 40.w,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -280,7 +280,7 @@ class _RoleCard extends StatelessWidget {
               ),
               child: Icon(
                 icon,
-                size: 24.sp,
+                size: 22.sp,
                 color: Colors.white,
               ),
             ),
@@ -291,7 +291,7 @@ class _RoleCard extends StatelessWidget {
               child: Text(
                 title,
                 style: GoogleFonts.outfit(
-                  fontSize: 16.5.sp,
+                  fontSize: 14.5.sp,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
                 ),

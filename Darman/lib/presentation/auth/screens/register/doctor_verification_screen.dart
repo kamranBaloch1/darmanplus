@@ -183,7 +183,7 @@ class _DoctorVerificationPendingScreenState
                     'Verification pending',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.outfit(
-                      fontSize: 24.sp,
+                      fontSize: 20.sp,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textPrimary,
                       letterSpacing: -0.4,
@@ -202,7 +202,7 @@ class _DoctorVerificationPendingScreenState
                     'Your documents have been submitted successfully. Our team will review them before activating your doctor profile.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.outfit(
-                      fontSize: 14.sp,
+                      fontSize: 12.sp,
                       height: 1.55,
                       color: AppColors.textSecondary,
                     ),
@@ -222,7 +222,7 @@ class _DoctorVerificationPendingScreenState
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20.r),
-                      border: Border.all(color: AppColors.border),
+                
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.03),
@@ -327,7 +327,7 @@ class _InfoRow extends StatelessWidget {
           child: Text(
             title,
             style: GoogleFonts.outfit(
-              fontSize: 13.5.sp,
+              fontSize: 12.5.sp,
               fontWeight: FontWeight.w500,
               color: AppColors.textPrimary,
             ),
