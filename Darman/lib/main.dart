@@ -5,6 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_in_app_messaging/firebase_in_app_messaging.dart';
 import 'package:darmaan/core/helpers/push_notification_service.dart';
 import 'package:darmaan/widgets/offline_status_banner.dart';
 import 'package:darmaan/core/services/secure_supabase_local_storage.dart';
@@ -35,6 +37,9 @@ void main() async {
   };
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   await Future.wait([
+    FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true),
+    FirebaseInAppMessaging.instance.setAutomaticDataCollectionEnabled(true),
+    FirebaseInAppMessaging.instance.setMessagesSuppressed(false),
     PushNotificationService.instance.initialize(),
     ServerClockService.instance.initialize(),
   ]);

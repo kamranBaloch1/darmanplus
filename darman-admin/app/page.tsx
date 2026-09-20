@@ -14,6 +14,7 @@ import {
   ClipboardList,
   Eye,
   LayoutDashboard,
+  LogOut,
   ReceiptText,
   Search,
   ShieldCheck,
@@ -172,6 +173,11 @@ export default function Home() {
     const r = await fetch("/api/admin/users", {
       headers: { Authorization: `Bearer ${s?.access_token}` },
     });
+    if (r.status === 401 || r.status === 403) {
+      setD(null);
+      await sb.auth.signOut();
+      return;
+    }
     setD(await r.json());
   };
   useEffect(() => {
@@ -226,6 +232,14 @@ export default function Home() {
             {tabLabel}
           </button>
         ))}
+        <button
+          className="sidebar-signout"
+          onClick={() => void sb.auth.signOut()}
+          title="Sign out"
+        >
+          <LogOut />
+          <span>Sign out</span>
+        </button>
       </aside>
       <section className="content">
         <header>
@@ -491,9 +505,25 @@ function Login() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const { error } = await sb!.auth.signInWithPassword({ email, password });
+    const { data, error } = await sb!.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (error || !data.session) {
+      setLoading(false);
+      setError("Incorrect email or password.");
+      return;
+    }
+    const authorization = await fetch("/api/admin/users", {
+      headers: { Authorization: `Bearer ${data.session.access_token}` },
+    });
+    if (!authorization.ok) {
+      await sb!.auth.signOut();
+      setLoading(false);
+      setError("This email is not authorized for Darman Admin.");
+      return;
+    }
     setLoading(false);
-    if (error) setError(error.message);
   }
   return (
     <main className="login">
