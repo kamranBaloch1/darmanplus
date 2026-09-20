@@ -156,6 +156,7 @@ export default function Home() {
   const routeTab = (tabs.find(([id]) => pathname === `/${id}`)?.[0] ??
     "overview") as T;
   const [s, setS] = useState<Session | null>(null),
+    [authChecking, setAuthChecking] = useState(true),
     [d, setD] = useState<D | null>(null),
     [t, setT] = useState<T>(routeTab),
     [q, setQ] = useState(""),
@@ -170,6 +171,7 @@ export default function Home() {
       if (!session) {
         setS(null);
         setD(null);
+        setAuthChecking(false);
         return;
       }
       const response = await fetch("/api/admin/users", {
@@ -178,11 +180,13 @@ export default function Home() {
       if (!response.ok) {
         setS(null);
         setD(null);
+        setAuthChecking(false);
         await sb.auth.signOut();
         return;
       }
       setD(await response.json());
       setS(session);
+      setAuthChecking(false);
     };
     void sb.auth.getSession().then((x) => acceptSession(x.data.session));
     const subscription = sb.auth.onAuthStateChange((_, session) => {
@@ -213,6 +217,13 @@ export default function Home() {
     return (
       <main className="setup">
         <h1>Configure Darman Admin</h1>
+      </main>
+    );
+  if (authChecking)
+    return (
+      <main className="loading">
+        <i />
+        <p>Opening Darman Admin...</p>
       </main>
     );
   if (!s) return <Login />;
