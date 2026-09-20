@@ -175,7 +175,7 @@ export default function Home() {
     });
     if (r.status === 401 || r.status === 403) {
       setD(null);
-      await sb.auth.signOut();
+      await sb?.auth.signOut();
       return;
     }
     setD(await r.json());
