@@ -165,9 +165,29 @@ export default function Home() {
   }, [routeTab]);
   useEffect(() => {
     if (!sb) return;
-    sb.auth.getSession().then((x) => setS(x.data.session));
-    return sb.auth.onAuthStateChange((_, x) => setS(x)).data.subscription
-      .unsubscribe;
+    const acceptSession = async (session: Session | null) => {
+      if (!session) {
+        setS(null);
+        setD(null);
+        return;
+      }
+      const response = await fetch("/api/admin/users", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!response.ok) {
+        setS(null);
+        setD(null);
+        await sb.auth.signOut();
+        return;
+      }
+      setD(await response.json());
+      setS(session);
+    };
+    void sb.auth.getSession().then((x) => acceptSession(x.data.session));
+    const subscription = sb.auth.onAuthStateChange((_, session) => {
+      void acceptSession(session);
+    }).data.subscription;
+    return () => subscription.unsubscribe();
   }, []);
   const load = async () => {
     const r = await fetch("/api/admin/users", {
