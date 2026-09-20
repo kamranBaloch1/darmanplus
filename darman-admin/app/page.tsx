@@ -157,7 +157,9 @@ export default function Home() {
     ? patients
     : t === "verification"
     ? doctors.filter((x) => !x.is_doctor_verified)
-    : doctors
+    : doctors.filter(
+        (x) => x.is_doctor_verified && !x.is_profile_completed,
+      )
   ).filter((x) =>
     `${x.name} ${x.email ?? ""}`.toLowerCase().includes(q.toLowerCase()),
   );
