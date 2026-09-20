@@ -8,6 +8,7 @@ import {
   ArrowRight,
   BadgeCheck,
   BarChart3,
+  Banknote,
   CalendarClock,
   CheckCircle2,
   ClipboardList,
@@ -71,8 +72,51 @@ type TopUp = {
     wallet_balance?: number;
   } | null;
 };
+type FinanceData = {
+  summary: {
+    topUps: number;
+    topUpCount: number;
+    revenue: number;
+    grossConsultations: number;
+    consultationCount: number;
+    doctorEarnings: number;
+    effectiveCommissionRate: number;
+    doctorPayable: number;
+    patientFunds: number;
+    patientAvailable: number;
+    patientReserved: number;
+    patientFundHolders: number;
+    reservedPatientCount: number;
+    totalLiabilities: number;
+  };
+  doctors: { id: string; name: string; email?: string; profileImage?: string; unpaid: number }[];
+  patientFunds: {
+    id: string;
+    name: string;
+    email?: string;
+    profileImage?: string;
+    available: number;
+    reserved: number;
+    total: number;
+  }[];
+  recentTopUps: {
+    id: string;
+    amount: number;
+    description: string;
+    created_at: string;
+  }[];
+  recentActivity: {
+    id: string;
+    transaction_type: string;
+    amount: number;
+    description: string;
+    created_at: string;
+    userName?: string;
+  }[];
+};
 type T =
   | "overview"
+  | "finance"
   | "doctors"
   | "patients"
   | "verification"
@@ -92,6 +136,7 @@ const sb =
     : null;
 const tabs: [T, string, React.ReactNode][] = [
   ["overview", "Overview", <LayoutDashboard />],
+  ["finance", "Finance", <Banknote />],
   ["doctors", "Doctors", <Stethoscope />],
   ["patients", "Patients", <Users />],
   ["verification", "Verification", <BadgeCheck />],
@@ -157,9 +202,7 @@ export default function Home() {
     ? patients
     : t === "verification"
     ? doctors.filter((x) => !x.is_doctor_verified)
-    : doctors.filter(
-        (x) => x.is_doctor_verified && !x.is_profile_completed,
-      )
+    : doctors.filter((x) => x.is_doctor_verified)
   ).filter((x) =>
     `${x.name} ${x.email ?? ""}`.toLowerCase().includes(q.toLowerCase()),
   );
@@ -207,6 +250,8 @@ export default function Home() {
           />
         ) : t === "manual-topups" ? (
           <ManualTopUps token={s.access_token} />
+        ) : t === "finance" ? (
+          <Finance token={s.access_token} />
         ) : (
           <section className="panel">
             <div className="tools">
@@ -323,6 +368,117 @@ export default function Home() {
         />
       )}
     </main>
+  );
+}
+
+function Finance({ token }: { token: string }) {
+  const [data, setData] = useState<FinanceData | null>(null),
+    [loading, setLoading] = useState(true),
+    [error, setError] = useState(""),
+    [range, setRange] = useState<"all" | "today" | "week" | "month" | "custom">("all"),
+    [from, setFrom] = useState(""),
+    [to, setTo] = useState("");
+
+  useEffect(() => {
+    const now = new Date();
+    let start = "";
+    let end = "";
+    if (range === "today") {
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    } else if (range === "week") {
+      start = new Date(now.getTime() - 7 * 86400000).toISOString();
+    } else if (range === "month") {
+      start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    } else if (range === "custom") {
+      if (from) start = new Date(`${from}T00:00:00`).toISOString();
+      if (to) end = new Date(`${to}T23:59:59`).toISOString();
+    }
+    const params = new URLSearchParams();
+    if (start) params.set("from", start);
+    if (end) params.set("to", end);
+    setLoading(true);
+    setError("");
+    fetch(`/api/admin/finance?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error ?? "Finance data could not be loaded.");
+        setData(result);
+      })
+      .catch((reason) => setError(reason.message))
+      .finally(() => setLoading(false));
+  }, [token, range, from, to]);
+
+  const money = (value: number) => `Rs. ${Number(value ?? 0).toLocaleString("en-PK")}`;
+  if (loading && !data) return <p className="detail-empty">Loading finance overview...</p>;
+  if (error && !data) return <p className="detail-empty">{error}</p>;
+  const summary = data?.summary;
+
+  return (
+    <section className="finance-page">
+      <div className="finance-heading">
+        <div>
+          <p>FINANCIAL CONTROL</p>
+          <h2>Money position and movement</h2>
+          <span>Monitor income and funds currently owed to patients and doctors.</span>
+        </div>
+        <div className="finance-toolbar"><div className="topup-tabs">
+          {(["all", "today", "week", "month", "custom"] as const).map((option) => (
+            <button key={option} className={range === option ? "selected" : ""} onClick={() => setRange(option)}>
+              {option === "all" ? "All time" : option}
+            </button>
+          ))}
+        </div></div>
+      </div>
+      {range === "custom" && <div className="finance-custom-row"><span>Transaction period</span><div className="finance-dates"><input type="date" value={from} onChange={(event) => setFrom(event.target.value)} /><span>to</span><input type="date" value={to} onChange={(event) => setTo(event.target.value)} /></div></div>}
+
+      <div className="finance-position">
+        <article className="finance-primary"><small>Darman revenue</small><strong>{money(summary?.revenue ?? 0)}</strong><span>Commission earned in selected period</span><em>{(summary?.effectiveCommissionRate ?? 0).toFixed(1)}% effective commission</em></article>
+        <article><small>Total funds owed</small><strong>{money(summary?.totalLiabilities ?? 0)}</strong><span>Current patient funds and doctor balances</span></article>
+        <div className="finance-liability-split"><span><small>Patient funds held</small><b>{money(summary?.patientFunds ?? 0)}</b><em>{money(summary?.patientAvailable ?? 0)} available · {money(summary?.patientReserved ?? 0)} reserved</em><em>{summary?.patientFundHolders ?? 0} patients</em></span><span><small>Doctor payables</small><b>{money(summary?.doctorPayable ?? 0)}</b></span></div>
+      </div>
+
+      <div className="finance-summary">
+        <article><small>Patient top-ups</small><strong>{money(summary?.topUps ?? 0)}</strong><span>{summary?.topUpCount ?? 0} successful wallet credits</span></article>
+        <article><small>Consultation volume</small><strong>{money(summary?.grossConsultations ?? 0)}</strong><span>{summary?.consultationCount ?? 0} completed settlements</span></article>
+        <article><small>Doctor earnings</small><strong>{money(summary?.doctorEarnings ?? 0)}</strong><span>Earnings generated in period</span></article>
+        <article><small>Reserved patient funds</small><strong>{money(summary?.patientReserved ?? 0)}</strong><span>{summary?.reservedPatientCount ?? 0} patients · {money(summary?.patientAvailable ?? 0)} available</span></article>
+      </div>
+
+      <div className="finance-grid">
+        <div className="finance-column">
+          <section className="panel finance-panel finance-liabilities-panel">
+            <div className="finance-panel-head"><div><small>LIABILITIES</small><h2>Doctor payables</h2></div><b>{data?.doctors.length ?? 0} doctors</b></div>
+            <div className="finance-list finance-people-list">
+              {data?.doctors.map((doctor) => (
+                <a className="finance-person" href={`/doctors/${doctor.id}`} key={doctor.id}>{doctor.profileImage ? <img src={doctor.profileImage} alt="" /> : <i>{(doctor.name || "D")[0]}</i>}<span><strong>{doctor.name || "Unnamed doctor"}</strong><small>View doctor profile</small></span><b>{money(doctor.unpaid)}</b><ArrowRight /></a>
+              ))}
+              {!data?.doctors.length && <p className="detail-empty">No unpaid doctor balances.</p>}
+            </div>
+          </section>
+          <section className="panel finance-panel finance-patient-panel">
+            <div className="finance-panel-head"><div><small>CUSTOMER FUNDS</small><h2>Patient funds held</h2></div><b>{data?.patientFunds.length ?? 0} patients</b></div>
+            <div className="finance-list finance-people-list">
+              {data?.patientFunds.map((patient) => (
+                <a className="finance-person patient-fund-person" href={`/patients/${patient.id}`} key={patient.id}>{patient.profileImage ? <img src={patient.profileImage} alt="" /> : <i>{(patient.name || "P")[0]}</i>}<span><strong>{patient.name || "Unnamed patient"}</strong><small>{money(patient.available)} available · {money(patient.reserved)} reserved</small></span><b>{money(patient.total)}</b><ArrowRight /></a>
+              ))}
+              {!data?.patientFunds.length && <p className="detail-empty">No patient funds are currently held.</p>}
+            </div>
+          </section>
+        </div>
+        <section className="panel finance-panel finance-ledger-panel">
+          <div className="finance-panel-head"><div><small>LEDGER</small><h2>Recent money movement</h2></div><b>{data?.recentActivity.length ?? 0} entries</b></div>
+          <div className="finance-list">
+            {data?.recentActivity.map((entry) => (
+              <article key={entry.id}><i className={`finance-kind ${entry.transaction_type}`}>{entry.transaction_type.replaceAll("_", " ")}</i><span><strong>{entry.userName || entry.description}</strong><small>{new Date(entry.created_at).toLocaleString()}</small></span><b className={entry.amount >= 0 ? "finance-positive" : "finance-negative"}>{entry.amount >= 0 ? "+" : "-"}{money(Math.abs(entry.amount))}</b></article>
+            ))}
+            {!data?.recentActivity.length && <p className="detail-empty">No financial activity in this period.</p>}
+          </div>
+        </section>
+      </div>
+      <p className="finance-note">Top-ups are customer funds, not Darman revenue. Current patient and doctor balances are shown regardless of the selected transaction period.</p>
+    </section>
   );
 }
 
