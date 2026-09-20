@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Eye,
+  EyeOff,
   LayoutDashboard,
   LogOut,
   ReceiptText,
@@ -519,6 +520,7 @@ function Finance({ token }: { token: string }) {
 function Login() {
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
+    [showPassword, setShowPassword] = useState(false),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(false);
   async function submit(e: React.FormEvent) {
@@ -571,13 +573,23 @@ function Login() {
           </label>
           <label>
             Password
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              required
-            />
+            <span className="password-field">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((visible) => !visible)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff /> : <Eye />}
+              </button>
+            </span>
           </label>
           {error && <em>{error}</em>}
           <button disabled={loading}>
@@ -585,19 +597,6 @@ function Login() {
           </button>
         </form>
       </section>
-      <aside>
-        <div>
-          <i>
-            <ShieldCheck />
-          </i>
-          <p>DARMAN PLATFORM</p>
-          <h2>Admin operations workspace</h2>
-          <span>
-            Review doctors, patients, consultations and manual wallet top-up
-            receipts.
-          </span>
-        </div>
-      </aside>
     </main>
   );
 }
