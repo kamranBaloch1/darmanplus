@@ -10,6 +10,7 @@ import 'package:darmaan/presentation/home/chat/chat_room.dart';
 import 'package:darmaan/presentation/home/video_call/video_call_repository.dart';
 import 'package:darmaan/widgets/app_icon.dart';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class VideoCallScreen extends StatefulWidget {
@@ -1187,7 +1188,9 @@ class _PeerPlaceholder extends StatelessWidget {
                 child: CircleAvatar(
                   radius: 58,
                   backgroundColor: const Color(0xFF33464F),
-                  backgroundImage: hasAvatar ? NetworkImage(avatarUrl!) : null,
+                  backgroundImage: hasAvatar
+                      ? CachedNetworkImageProvider(avatarUrl!)
+                      : null,
                   child: hasAvatar
                       ? null
                       : Text(
@@ -1434,7 +1437,9 @@ class _CallErrorState extends StatelessWidget {
             CircleAvatar(
               radius: 48,
               backgroundColor: const Color(0xFF33464F),
-              backgroundImage: hasAvatar ? NetworkImage(avatarUrl!) : null,
+              backgroundImage: hasAvatar
+                  ? CachedNetworkImageProvider(avatarUrl!)
+                  : null,
               child: hasAvatar
                   ? null
                   : Text(

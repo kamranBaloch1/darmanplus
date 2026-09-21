@@ -685,7 +685,11 @@ class PatientRepository {
         await _supabase.storage.from('patient-avatars').upload(
           path,
           profilePhoto,
-          fileOptions: const FileOptions(upsert: true, contentType: 'image/jpeg'),
+          fileOptions: const FileOptions(
+            upsert: true,
+            contentType: 'image/jpeg',
+            cacheControl: '31536000',
+          ),
         );
         final publicUrl =
             _supabase.storage.from('patient-avatars').getPublicUrl(path);

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:darmaan/core/models/user_model.dart';
 import 'package:darmaan/core/theme/app_colors.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:darmaan/widgets/app_icon.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:video_player/video_player.dart';
 
@@ -13,6 +15,13 @@ bool isDoctorIntroAudio(String url) {
   final path = Uri.tryParse(url)?.path.toLowerCase() ?? url.toLowerCase();
   return const ['.mp3', '.m4a', '.aac', '.wav', '.ogg', '.flac', '.opus']
       .any(path.endsWith);
+}
+
+Future<File> _cachedIntroFile(String url) async {
+  final cache = DefaultCacheManager();
+  final existing = await cache.getFileFromCache(url);
+  if (existing != null && await existing.file.exists()) return existing.file;
+  return cache.getSingleFile(url);
 }
 
 Future<void> showDoctorIntroDialog(
@@ -91,7 +100,8 @@ class _DoctorAudioDialogState extends State<_DoctorAudioDialog> {
 
   Future<void> _load() async {
     try {
-      await _player.setUrl(widget.url);
+      final cachedFile = await _cachedIntroFile(widget.url);
+      await _player.setFilePath(cachedFile.path);
       await _player.setLoopMode(LoopMode.off);
       if (mounted) setState(() => _loading = false);
     } catch (_) {
@@ -524,7 +534,9 @@ class _DoctorVideoDialogState extends State<DoctorVideoDialog> {
 
     VideoPlayerController? candidate;
     try {
-      candidate = VideoPlayerController.networkUrl(videoUri);
+      final cachedFile = await _cachedIntroFile(videoUri.toString());
+      if (!mounted || attempt != _loadAttempt) return;
+      candidate = VideoPlayerController.file(cachedFile);
       await candidate.initialize().timeout(const Duration(seconds: 25));
       await candidate.setLooping(false);
       await candidate.play();

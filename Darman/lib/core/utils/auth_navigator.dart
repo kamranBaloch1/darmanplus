@@ -42,8 +42,7 @@ class AuthNavigator {
 
     /*
      * Register the FCM device token for:
-     * 1. Patients
-     * 2. Verified doctors
+     * Every user whose public profile row has been created.
      *
      * Notification registration failure must not prevent
      * the user from entering the application.
@@ -54,8 +53,7 @@ class AuthNavigator {
     if (!context.mounted) return;
     final shouldActivateNotifications =
         !isOffline &&
-        user != null &&
-        (user.isPatient || user.isDoctorVerified);
+        user != null;
 
     if (shouldActivateNotifications && !prioritizingAcceptedCall) {
       try {

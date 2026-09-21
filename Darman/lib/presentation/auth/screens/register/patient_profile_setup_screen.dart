@@ -79,16 +79,16 @@ class _PatientProfileSetupScreenState extends State<PatientProfileSetupScreen> {
     try {
       final picked = await ImagePicker().pickImage(
         source: ImageSource.gallery,
-        imageQuality: 92,
-        maxWidth: 2400,
-        maxHeight: 2400,
+        imageQuality: 82,
+        maxWidth: 1200,
+        maxHeight: 1200,
       );
       if (picked == null) return;
       final cropped = await ImageCropper().cropImage(
         sourcePath: picked.path,
         aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
         compressFormat: ImageCompressFormat.jpg,
-        compressQuality: 85,
+        compressQuality: 82,
         uiSettings: [
           AndroidUiSettings(
             toolbarTitle: 'Crop profile photo',

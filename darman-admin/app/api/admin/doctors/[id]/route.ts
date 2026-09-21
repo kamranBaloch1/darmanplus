@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import crypto from "crypto";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -87,4 +88,118 @@ export async function GET(
     ratings: (ratingsResult.data ?? []).map((rating) => ({ ...rating, patient: personById.get(rating.patient_id) ?? null })),
     transactions: walletResult.data ?? [],
   });
+}
+
+function b64url(value: string | Buffer) {
+  return Buffer.from(value).toString("base64").replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+}
+
+async function notifyBeforeDeletion(client: any, userId: string) {
+  try {
+    const credentialsJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (!credentialsJson) return;
+    const credentials = JSON.parse(credentialsJson);
+    const now = Math.floor(Date.now() / 1000);
+    const header = b64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+    const claim = b64url(JSON.stringify({
+      iss: credentials.client_email,
+      scope: "https://www.googleapis.com/auth/firebase.messaging",
+      aud: "https://oauth2.googleapis.com/token",
+      iat: now,
+      exp: now + 3600,
+    }));
+    const input = `${header}.${claim}`;
+    const signature = crypto.createSign("RSA-SHA256").update(input).sign(credentials.private_key);
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+        assertion: `${input}.${b64url(signature)}`,
+      }),
+    });
+    const { access_token: accessToken } = await tokenResponse.json();
+    if (!accessToken) return;
+
+    const { data: devices } = await client.from("push_notification_tokens").select("token").eq("user_id", userId);
+    if (!devices?.length) return;
+    const endpoint = `https://fcm.googleapis.com/v1/projects/${credentials.project_id}/messages:send`;
+    await Promise.all(devices.map(({ token }: { token: string }) => fetch(endpoint, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: {
+          token,
+          notification: {
+            title: "Doctor registration removed",
+            body: "Your doctor registration was removed because it could not be verified.",
+          },
+          data: { type: "doctor_account_deleted" },
+          android: { priority: "HIGH", notification: { channel_id: "consultation_requests", sound: "default" } },
+          apns: { headers: { "apns-priority": "10" }, payload: { aps: { sound: "default", badge: 1 } } },
+        },
+      }),
+    })));
+  } catch (error) {
+    console.error("Doctor deletion notification failed", error);
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const client = await adminClient(request);
+  if (!client) {
+    return NextResponse.json({ error: "You are not authorized to delete accounts." }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const { data: doctor, error: doctorError } = await client
+    .from("users")
+    .select("uid,role,is_doctor_verified,wallet_balance,wallet_reserved_balance,wallet_recovery_due,doctor_documents")
+    .eq("uid", id)
+    .eq("role", "doctor")
+    .maybeSingle();
+  if (doctorError || !doctor) {
+    return NextResponse.json({ error: "Doctor account was not found." }, { status: 404 });
+  }
+  if (doctor.is_doctor_verified) {
+    return NextResponse.json({ error: "Unverify this doctor before deleting the account." }, { status: 409 });
+  }
+
+  const { data: booking, error: bookingError } = await client
+    .from("bookings")
+    .select("id")
+    .eq("doctor_id", id)
+    .limit(1)
+    .maybeSingle();
+  if (bookingError) {
+    return NextResponse.json({ error: bookingError.message }, { status: 500 });
+  }
+  if (booking) {
+    return NextResponse.json({ error: "This doctor has consultation history and cannot be permanently deleted." }, { status: 409 });
+  }
+
+  const hasFunds = [doctor.wallet_balance, doctor.wallet_reserved_balance, doctor.wallet_recovery_due]
+    .some((value) => Math.abs(Number(value ?? 0)) > 0.001);
+  if (hasFunds) {
+    return NextResponse.json({ error: "Clear this doctor's wallet balance before deleting the account." }, { status: 409 });
+  }
+
+  await notifyBeforeDeletion(client, id);
+
+  const { error: deleteError } = await client.auth.admin.deleteUser(id);
+  if (deleteError) {
+    return NextResponse.json({ error: deleteError.message }, { status: 500 });
+  }
+
+  const documents = Array.isArray(doctor.doctor_documents)
+    ? doctor.doctor_documents.filter((path): path is string => typeof path === "string" && path.length > 0)
+    : [];
+  if (documents.length) {
+    await client.storage.from("doctor-documents").remove(documents);
+  }
+
+  return NextResponse.json({ ok: true });
 }

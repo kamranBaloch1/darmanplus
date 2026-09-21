@@ -28,5 +28,6 @@ export default function DoctorPage() {
     onClose={() => router.push("/doctors")}
     onVerified={() => updateVerification("PATCH")}
     onUnverified={() => updateVerification("DELETE")}
+    onDeleted={async () => router.push("/verification")}
   />;
 }

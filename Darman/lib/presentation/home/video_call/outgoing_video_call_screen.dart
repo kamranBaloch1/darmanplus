@@ -4,6 +4,7 @@ import 'package:darmaan/presentation/home/video_call/video_call_invite_repositor
 import 'package:darmaan/presentation/home/video_call/video_call_screen.dart';
 import 'package:darmaan/widgets/app_icon.dart';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class OutgoingVideoCallScreen extends StatefulWidget {
   const OutgoingVideoCallScreen({
@@ -170,7 +171,7 @@ class _OutgoingVideoCallScreenState extends State<OutgoingVideoCallScreen> {
                   radius: 58,
                   backgroundColor: const Color(0xFF35464F),
                   backgroundImage: widget.peerAvatarUrl?.trim().isNotEmpty == true
-                      ? NetworkImage(widget.peerAvatarUrl!)
+                      ? CachedNetworkImageProvider(widget.peerAvatarUrl!)
                       : null,
                   child: widget.peerAvatarUrl?.trim().isNotEmpty == true
                       ? null

@@ -411,6 +411,10 @@ export default function Home() {
             });
             void load();
           }}
+          onDeleted={async () => {
+            setDoctorId(null);
+            await load();
+          }}
         />
       )}
     </main>

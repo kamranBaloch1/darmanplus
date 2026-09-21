@@ -38,6 +38,7 @@ class DoctorRepository {
             fileOptions: const FileOptions(
               contentType: 'image/jpeg',
               upsert: false,
+              cacheControl: '31536000',
             ),
           );
       final profileImageUrl = _supabase.storage
@@ -69,6 +70,7 @@ class DoctorRepository {
               fileOptions: const FileOptions(
                 contentType: 'application/pdf',
                 upsert: false,
+                cacheControl: '31536000',
               ),
             );
 

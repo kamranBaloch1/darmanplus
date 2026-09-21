@@ -161,9 +161,9 @@ void initState() {
   Future<void> _pickAndCropPhoto() async {
     final picked = await ImagePicker().pickImage(
       source: ImageSource.gallery,
-      imageQuality: 95,
-      maxWidth: 3000,
-      maxHeight: 3000,
+      imageQuality: 82,
+      maxWidth: 1200,
+      maxHeight: 1200,
     );
     if (picked == null) return;
 
@@ -175,7 +175,7 @@ void initState() {
       final cropped = await ImageCropper().cropImage(
         sourcePath: picked.path,
         aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-        compressQuality: 85,
+        compressQuality: 82,
         uiSettings: [
           AndroidUiSettings(
             toolbarTitle: 'Crop photo',

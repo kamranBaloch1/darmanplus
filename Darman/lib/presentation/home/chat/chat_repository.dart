@@ -499,7 +499,11 @@ class ChatRepository {
           .upload(
             storagePath,
             file,
-            fileOptions: FileOptions(contentType: mimeType, upsert: false),
+            fileOptions: FileOptions(
+              contentType: mimeType,
+              upsert: false,
+              cacheControl: '31536000',
+            ),
           );
       try {
         return await _insertMessage(

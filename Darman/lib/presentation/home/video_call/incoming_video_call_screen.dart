@@ -6,6 +6,7 @@ import 'package:darmaan/presentation/home/video_call/video_call_invite_repositor
 import 'package:darmaan/presentation/home/video_call/video_call_screen.dart';
 import 'package:darmaan/widgets/app_icon.dart';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -257,7 +258,9 @@ class _IncomingVideoCallScreenState extends State<IncomingVideoCallScreen> {
                     backgroundColor: const Color(0xFF35464F),
                     backgroundImage:
                         _callerProfile?.photoUrl?.trim().isNotEmpty == true
-                            ? NetworkImage(_callerProfile!.photoUrl!)
+                            ? CachedNetworkImageProvider(
+                                _callerProfile!.photoUrl!,
+                              )
                             : null,
                     child: _callerProfile?.photoUrl?.trim().isNotEmpty == true
                         ? null

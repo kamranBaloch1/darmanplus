@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, BadgeCheck, CalendarDays, Check, CircleCheck, CircleDollarSign, Clock3, Download, ExternalLink, FileText, Mail, Phone, PlayCircle, ShieldCheck, Star, Stethoscope, TrendingUp, UserRound, WalletCards } from "lucide-react";
+import { ArrowLeft, BadgeCheck, CalendarDays, Check, CircleCheck, CircleDollarSign, Clock3, Download, ExternalLink, FileText, Mail, Phone, PlayCircle, ShieldCheck, Star, Stethoscope, Trash2, TrendingUp, UserRound, WalletCards } from "lucide-react";
 
 type Detail = {
   doctor: Record<string, unknown> & { uid: string; name: string; profile_image: string | null; is_doctor_verified: boolean; is_available: boolean; doctor_documents: string[]; documents: { path: string; url: string }[] };
@@ -19,13 +19,15 @@ const money = (value: unknown) => `Rs. ${Number(value ?? 0).toLocaleString("en-P
 const date = (value: unknown) => value ? new Intl.DateTimeFormat("en-PK", { dateStyle: "medium", timeStyle: "short" }).format(new Date(String(value))) : "—";
 const label = (value: string) => value.replace(/([A-Z])/g, " $1").replace(/_/g, " ").replace(/^./, (letter) => letter.toUpperCase());
 
-export default function DoctorDetailsDialog({ doctorId, token, onClose, onVerified, onUnverified }: { doctorId: string; token: string; onClose: () => void; onVerified: (id: string) => Promise<void>; onUnverified: (id: string) => Promise<void> }) {
+export default function DoctorDetailsDialog({ doctorId, token, onClose, onVerified, onUnverified, onDeleted }: { doctorId: string; token: string; onClose: () => void; onVerified: (id: string) => Promise<void>; onUnverified: (id: string) => Promise<void>; onDeleted?: () => Promise<void> }) {
   const router = useRouter();
   useEffect(() => { if (!window.location.pathname.startsWith("/doctors/")) router.push(`/doctors/${doctorId}`); }, [doctorId, router]);
   const [data, setData] = useState<Detail | null>(null);
   const [error, setError] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [confirmUnverify, setConfirmUnverify] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const load = async () => {
     try {
       setError("");
@@ -46,18 +48,43 @@ export default function DoctorDetailsDialog({ doctorId, token, onClose, onVerifi
     setVerifying(true);
     try { await onUnverified(doctorId); await load(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Doctor could not be unverified."); } finally { setVerifying(false); }
   };
+  const deleteDoctor = async () => {
+    setDeleting(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/admin/doctors/${doctorId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const result = await response.json();
+      if (!response.ok) throw Error(result.error ?? "Doctor account could not be deleted.");
+      setConfirmDelete(false);
+      if (typeof onDeleted === "function") {
+        await onDeleted();
+      } else {
+        onClose();
+        router.push("/verification");
+      }
+    } catch (cause) {
+      setConfirmDelete(false);
+      setError(cause instanceof Error ? cause.message : "Doctor account could not be deleted.");
+    } finally {
+      setDeleting(false);
+    }
+  };
   return <main className="doctor-page">
     <article className="doctor-page-inner">
       <button className="detail-back" onClick={onClose}><ArrowLeft />Back to doctors</button>
       {!data && !error && <div className="detail-loading"><span /><p>Loading complete doctor overview…</p></div>}
       {error && <div className="detail-error"><ShieldCheck /><h2>Profile could not be loaded</h2><p>{error}</p><button className="blue" onClick={() => void load()}>Try again</button></div>}
-      {data && <Profile data={data} token={token} verify={verify} requestUnverify={() => setConfirmUnverify(true)} verifying={verifying} reload={load} />}
+      {data && <Profile data={data} token={token} verify={verify} requestUnverify={() => setConfirmUnverify(true)} requestDelete={() => setConfirmDelete(true)} verifying={verifying} reload={load} />}
       {confirmUnverify && <div className="confirm-overlay"><section className="confirm-dialog"><h2>Unverify this doctor?</h2><p>This removes verified status and immediately sets the doctor offline. They will no longer be available for patient bookings.</p><div><button onClick={() => setConfirmUnverify(false)}>Keep verified</button><button className="danger-action" disabled={verifying} onClick={() => { setConfirmUnverify(false); void unverify(); }}>{verifying ? "Updating…" : "Unverify doctor"}</button></div></section></div>}
+      {confirmDelete && <div className="confirm-overlay"><section className="confirm-dialog"><h2>Delete this doctor account?</h2><p>This permanently removes the unverified doctor’s login and profile. Accounts with consultations or wallet funds cannot be deleted.</p><div><button onClick={() => setConfirmDelete(false)}>Cancel</button><button className="danger-action" disabled={deleting} onClick={() => void deleteDoctor()}>{deleting ? "Deleting…" : "Delete permanently"}</button></div></section></div>}
     </article>
   </main>;
 }
 
-function Profile({ data, token, verify, requestUnverify, verifying, reload }: { data: Detail; token: string; verify: () => Promise<void>; requestUnverify: () => void; verifying: boolean; reload: () => Promise<void> }) {
+function Profile({ data, token, verify, requestUnverify, requestDelete, verifying, reload }: { data: Detail; token: string; verify: () => Promise<void>; requestUnverify: () => void; requestDelete: () => void; verifying: boolean; reload: () => Promise<void> }) {
   const doctor = data.doctor;
   const completed = data.bookings.filter((booking) => booking.status === "completed");
   const cancelled = data.bookings.filter((booking) => booking.status === "cancelled");
@@ -83,7 +110,7 @@ function Profile({ data, token, verify, requestUnverify, verifying, reload }: { 
     Watch intro video
   </a>
 )}</div>
-      <div className="detail-actions"><span>Last updated<br /><b>{date(doctor.updated_at)}</b></span>{doctor.is_doctor_verified ? <button className="unverify-detail" disabled={verifying} onClick={requestUnverify}>{verifying ? "Updating…" : "Unverify doctor"}</button> : <button className="blue verify-detail" disabled={verifying} onClick={() => void verify()}><BadgeCheck />{verifying ? "Verifying…" : "Verify doctor"}</button>}</div>
+      <div className="detail-actions"><span>Last updated<br /><b>{date(doctor.updated_at)}</b></span>{doctor.is_doctor_verified ? <button className="unverify-detail" disabled={verifying} onClick={requestUnverify}>{verifying ? "Updating…" : "Unverify doctor"}</button> : <><button className="delete-doctor-detail" onClick={requestDelete}><Trash2 />Delete</button><button className="blue verify-detail" disabled={verifying} onClick={() => void verify()}><BadgeCheck />{verifying ? "Verifying…" : "Verify doctor"}</button></>}</div>
     </header>
     <section className="detail-stats">
       <Metric icon={<WalletCards />} label="Wallet balance" value={money(doctor.wallet_balance)} />

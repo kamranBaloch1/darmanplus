@@ -60,8 +60,12 @@ class DoctorProfileRepository {
 
     await _supabase.storage.from(bucket).upload(
           storagePath,
-          file,
-          fileOptions: FileOptions(upsert: true, contentType: contentType),
+        file,
+          fileOptions: FileOptions(
+            upsert: true,
+            contentType: contentType,
+            cacheControl: '31536000',
+          ),
         );
 
     return _supabase.storage.from(bucket).getPublicUrl(storagePath);

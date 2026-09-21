@@ -16,6 +16,7 @@ import 'package:darmaan/presentation/home/patient/repository/patient_repository.
 import 'package:darmaan/presentation/home/video_call/outgoing_video_call_screen.dart';
 import 'package:darmaan/presentation/home/video_call/video_call_invite_repository.dart';
 import 'package:darmaan/widgets/app_shimmer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart' as fp;
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
@@ -2756,10 +2757,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: widget.peerAvatarUrl?.trim().isNotEmpty == true
-                      ? Image.network(
-                          widget.peerAvatarUrl!,
+                      ? CachedNetworkImage(
+                          imageUrl: widget.peerAvatarUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) {
+                          errorWidget: (_, _, _) {
                             return AppIcon(
                               Icons.person_rounded,
                               size: 23,
@@ -3597,16 +3598,18 @@ class _ImageMessageState extends State<_ImageMessage> {
                   MaterialPageRoute(
                     builder: (_) => _FullScreenImageViewer(
                       url: snapshot.data!,
+                      cacheKey: widget.message.mediaUrl!,
                       fileName: widget.message.fileName,
                     ),
                   ),
                 )
               : null,
           child: snapshot.hasData
-              ? Image.network(
-                  snapshot.data!,
+              ? CachedNetworkImage(
+                  imageUrl: snapshot.data!,
+                  cacheKey: widget.message.mediaUrl!,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => _imagePlaceholder(error: true),
+                  errorWidget: (_, _, _) => _imagePlaceholder(error: true),
                 )
               : _imagePlaceholder(),
         );
@@ -3847,8 +3850,13 @@ Future<void> _saveMedia(
 }
 
 class _FullScreenImageViewer extends StatelessWidget {
-  const _FullScreenImageViewer({required this.url, this.fileName});
+  const _FullScreenImageViewer({
+    required this.url,
+    required this.cacheKey,
+    this.fileName,
+  });
   final String url;
+  final String cacheKey;
   final String? fileName;
 
   @override
@@ -3870,7 +3878,16 @@ class _FullScreenImageViewer extends StatelessWidget {
       child: InteractiveViewer(
         minScale: .8,
         maxScale: 5,
-        child: Image.network(url, fit: BoxFit.contain, gaplessPlayback: true),
+        child: CachedNetworkImage(
+          imageUrl: url,
+          cacheKey: cacheKey,
+          fit: BoxFit.contain,
+          useOldImageOnUrlChange: true,
+          errorWidget: (_, _, _) => const AppIcon(
+            Icons.broken_image_outlined,
+            color: Colors.white,
+          ),
+        ),
       ),
     ),
   );

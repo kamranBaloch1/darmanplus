@@ -50,7 +50,14 @@ class ManualTopUpRepository {
 
     await _supabase.storage
         .from('wallet-receipts')
-        .upload(path, file);
+        .upload(
+          path,
+          file,
+          fileOptions: const FileOptions(
+            upsert: false,
+            cacheControl: '31536000',
+          ),
+        );
 
     // Store the storage path, not a permanent public URL.
     return path;

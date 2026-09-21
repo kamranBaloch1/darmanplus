@@ -1,4 +1,5 @@
 import 'package:darmaan/core/models/user_model.dart';
+import 'package:darmaan/core/helpers/push_notification_service.dart';
 import 'package:darmaan/core/theme/app_colors.dart';
 import 'package:darmaan/presentation/auth/repository/register/user_repository.dart';
 import 'package:darmaan/presentation/auth/screens/register/patient_profile_setup_screen.dart';
@@ -36,6 +37,12 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen> {
       await _userRepository.createUser(
         role: selectedRole!,
       );
+
+      try {
+        await PushNotificationService.instance.activateForSignedInUser();
+      } catch (_) {
+        // Registration is retried by AuthNavigator on the next authenticated launch.
+      }
 
       if (!mounted) return;
 

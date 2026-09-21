@@ -10,6 +10,12 @@ verify_jwt = false
 [functions.send-follow-up-day-reminders]
 verify_jwt = false
 
+[functions.send-pending-consultation-reminders]
+verify_jwt = false
+
+[functions.send-accepted-consultation-reminders]
+verify_jwt = false
+
 [functions.create-jazzcash-top-up]
 verify_jwt = false
 
