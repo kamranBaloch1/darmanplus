@@ -5,7 +5,9 @@ import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:darmaan/presentation/home/wallet/repository/manual_top_up_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gal/gal.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 class JazzCashPaymentScreen extends StatefulWidget {
   const JazzCashPaymentScreen({
@@ -36,6 +38,7 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
 
   bool _copied = false;
   bool _submitting = false;
+  bool _savingQr = false;
   File? _receiptFile;
 
   Future<void> _copyAccountNumber() async {
@@ -45,6 +48,33 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => _copied = false);
     });
+  }
+
+  Future<void> _saveQrCode() async {
+    if (_savingQr) return;
+    setState(() => _savingQr = true);
+    try {
+      var allowed = await Gal.hasAccess();
+      if (!allowed) allowed = await Gal.requestAccess();
+      if (!allowed) throw Exception('Gallery permission was not allowed.');
+
+      final data = await rootBundle.load(qrAsset);
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/darman-jazzcash-till-qr.jpeg');
+      await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
+      await Gal.putImage(file.path);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('QR code saved to your gallery.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppErrorMessage.from(error))),
+      );
+    } finally {
+      if (mounted) setState(() => _savingQr = false);
+    }
   }
 
   Future<void> _chooseReceiptSource() async {
@@ -302,7 +332,7 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Scan the QR or send to the number below.',
+                      'Scan the QR or pay using the account below.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
@@ -370,7 +400,32 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                                   color: accent,
                                 ),
                               ),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 6),
+                              TextButton.icon(
+                                onPressed: _savingQr ? null : _saveQrCode,
+                                icon: _savingQr
+                                    ? const SizedBox.square(
+                                        dimension: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.download_rounded,
+                                        size: 18,
+                                      ),
+                                label: Text(
+                                  _savingQr ? 'Saving...' : 'Save QR',
+                                ),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.black,
+                                  textStyle: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
                             ],
                           ),
                         ),
@@ -424,7 +479,7 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
-                            'or send to',
+                            'or pay with jazzcash',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey.shade500,
@@ -468,17 +523,24 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                                 children: [
                                   _jazzCashMark(size: 22),
                                   const SizedBox(width: 10),
-                                  Text(
-                                    accountNumber,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      letterSpacing: 0.4,
-                                      fontFeatures: [
-                                        FontFeature.tabularFigures(),
-                                      ],
-                                      color: accent,
-                                    ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      
+                                      const Text(
+                                        accountNumber,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          letterSpacing: 0.4,
+                                          fontFeatures: [
+                                            FontFeature.tabularFigures(),
+                                          ],
+                                          color: accent,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(width: 8),
                                   Icon(

@@ -22,7 +22,6 @@ class ChatRepository {
   final SupabaseClient _supabase;
   static const _uuid = Uuid();
   static const int pageSize = 40;
-  static const int preSessionMessageLimit = 15;
   static const int upcomingFollowUpMessageLimit = 5;
   static final Map<String, _SignedUrlCacheEntry> _signedUrlCache = {};
 
@@ -628,6 +627,19 @@ class ChatRepository {
             'updated_at': DateTime.now().toUtc().toIso8601String(),
           })
           .eq('id', roomId);
+    }
+  }
+
+  Future<int> getPreSessionMessageLimit() async {
+    try {
+      final result = await _supabase.rpc('get_pre_session_message_limit');
+      final limit = result is num ? result.toInt() : int.tryParse('$result');
+      if (limit == null || limit <= 0) {
+        throw const ChatException('Chat message limit is not configured.');
+      }
+      return limit;
+    } on PostgrestException catch (e) {
+      throw ChatException(e.message);
     }
   }
 

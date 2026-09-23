@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { createClient, Session } from "@supabase/supabase-js";
 import DoctorDetailsDialog from "./components/doctor-details-dialog";
+import StorageImage from "./components/storage-image";
 
 type U = {
   uid: string;
@@ -53,6 +54,7 @@ type D = {
   patients: U[];
   consultations: C[];
   stats: Record<string, number>;
+  pagination: { page: number; pageSize: number; total: number; totalPages: number };
 };
 type TopUp = {
   id: string;
@@ -160,10 +162,12 @@ export default function Home() {
     [d, setD] = useState<D | null>(null),
     [t, setT] = useState<T>(routeTab),
     [q, setQ] = useState(""),
+    [page, setPage] = useState(1),
     [doctorId, setDoctorId] = useState<string | null>(null);
   useEffect(() => {
     setT(routeTab);
     setQ("");
+    setPage(1);
   }, [routeTab]);
   useEffect(() => {
     if (!sb) return;
@@ -174,7 +178,7 @@ export default function Home() {
         setAuthChecking(false);
         return;
       }
-      const response = await fetch("/api/admin/users", {
+      const response = await fetch(`/api/admin/users?scope=${routeTab}&page=1`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!response.ok) {
@@ -194,8 +198,10 @@ export default function Home() {
     }).data.subscription;
     return () => subscription.unsubscribe();
   }, []);
-  const load = async () => {
-    const r = await fetch("/api/admin/users", {
+  const load = async (targetPage = page, search = q, scope = t) => {
+    const params = new URLSearchParams({ scope, page: String(targetPage), pageSize: "24" });
+    if (search.trim()) params.set("q", search.trim());
+    const r = await fetch(`/api/admin/users?${params}`, {
       headers: { Authorization: `Bearer ${s?.access_token}` },
     });
     if (r.status === 401 || r.status === 403) {
@@ -206,11 +212,14 @@ export default function Home() {
     setD(await r.json());
   };
   useEffect(() => {
-    if (s) void load();
-  }, [s]);
+    if (!s) return;
+    const timer = setTimeout(() => void load(page, q, t), 250);
+    return () => clearTimeout(timer);
+  }, [s, page, q, t]);
   const navigate = (next: T) => {
     setT(next);
     setQ("");
+    setPage(1);
     router.push(`/${next}`);
   };
   if (!sb)
@@ -230,11 +239,9 @@ export default function Home() {
   const doctors = d?.doctors ?? [],
     patients = d?.patients ?? [],
     cs = d?.consultations ?? [],
-    verified = doctors.filter((x) => x.is_doctor_verified).length,
-    pending = doctors.length - verified,
-    incomplete = doctors.filter(
-      (x) => x.is_doctor_verified && !x.is_profile_completed,
-    ).length;
+    verified = d?.stats?.verifiedDoctors ?? 0,
+    pending = d?.stats?.pendingDoctors ?? 0,
+    incomplete = d?.stats?.incompleteDoctors ?? 0;
   const title = tabs.find((x) => x[0] === t)?.[1] ?? "Overview";
   const people = (t === "patients"
     ? patients
@@ -312,7 +319,7 @@ export default function Home() {
               {t === "doctors" && (
                 <div className="list-counts">
                   <span className="count-total">
-                    {doctors.length} Total doctors
+                    {verified + pending} Total doctors
                   </span>
                   <span className="count-verified">{verified} Verified</span>
                   <span className="count-pending">{pending} Pending</span>
@@ -324,7 +331,7 @@ export default function Home() {
               {t === "patients" && (
                 <div className="list-counts">
                   <span className="count-total">
-                    {patients.length} Total patients
+                    {d?.stats?.patients ?? 0} Total patients
                   </span>
                 </div>
               )}
@@ -359,7 +366,7 @@ export default function Home() {
                     )}
                     <div className="doctor-card-user">
                       {x.profile_image ? (
-                        <img src={x.profile_image} alt="" />
+                        <StorageImage src={x.profile_image} size={96} />
                       ) : (
                         <b>{(x.name || "U")[0]}</b>
                       )}
@@ -388,6 +395,16 @@ export default function Home() {
                   </article>
                 ))}
               </div>
+            )}
+            {d?.pagination &&
+              ["doctors", "patients", "verification", "consultations", "followups"].includes(t) &&
+              d.pagination.totalPages > 1 && (
+              <Pagination
+                page={d.pagination.page}
+                totalPages={d.pagination.totalPages}
+                total={d.pagination.total}
+                onChange={setPage}
+              />
             )}
           </section>
         )}
@@ -502,7 +519,7 @@ function Finance({ token }: { token: string }) {
             <div className="finance-panel-head"><div><small>LIABILITIES</small><h2>Doctor payables</h2></div><b>{data?.doctors.length ?? 0} doctors</b></div>
             <div className="finance-list finance-people-list">
               {data?.doctors.map((doctor) => (
-                <a className="finance-person" href={`/doctors/${doctor.id}`} key={doctor.id}>{doctor.profileImage ? <img src={doctor.profileImage} alt="" /> : <i>{(doctor.name || "D")[0]}</i>}<span><strong>{doctor.name || "Unnamed doctor"}</strong><small>View doctor profile</small></span><b>{money(doctor.unpaid)}</b><ArrowRight /></a>
+                <a className="finance-person" href={`/doctors/${doctor.id}`} key={doctor.id}>{doctor.profileImage ? <StorageImage src={doctor.profileImage} size={64} /> : <i>{(doctor.name || "D")[0]}</i>}<span><strong>{doctor.name || "Unnamed doctor"}</strong><small>View doctor profile</small></span><b>{money(doctor.unpaid)}</b><ArrowRight /></a>
               ))}
               {!data?.doctors.length && <p className="detail-empty">No unpaid doctor balances.</p>}
             </div>
@@ -511,7 +528,7 @@ function Finance({ token }: { token: string }) {
             <div className="finance-panel-head"><div><small>CUSTOMER FUNDS</small><h2>Patient funds held</h2></div><b>{data?.patientFunds.length ?? 0} patients</b></div>
             <div className="finance-list finance-people-list">
               {data?.patientFunds.map((patient) => (
-                <a className="finance-person patient-fund-person" href={`/patients/${patient.id}`} key={patient.id}>{patient.profileImage ? <img src={patient.profileImage} alt="" /> : <i>{(patient.name || "P")[0]}</i>}<span><strong>{patient.name || "Unnamed patient"}</strong><small>{money(patient.available)} available · {money(patient.reserved)} reserved</small></span><b>{money(patient.total)}</b><ArrowRight /></a>
+                <a className="finance-person patient-fund-person" href={`/patients/${patient.id}`} key={patient.id}>{patient.profileImage ? <StorageImage src={patient.profileImage} size={64} /> : <i>{(patient.name || "P")[0]}</i>}<span><strong>{patient.name || "Unnamed patient"}</strong><small>{money(patient.available)} available · {money(patient.reserved)} reserved</small></span><b>{money(patient.total)}</b><ArrowRight /></a>
               ))}
               {!data?.patientFunds.length && <p className="detail-empty">No patient funds are currently held.</p>}
             </div>
@@ -817,7 +834,7 @@ function ManualTopUps({ token }: { token: string }) {
               <article className="topup-row" key={x.id}>
                 <div className="topup-user">
                   {x.user?.profile_image ? (
-                    <img src={x.user.profile_image} alt="" />
+                    <StorageImage src={x.user.profile_image} size={80} />
                   ) : (
                     <b>{(x.user?.name || "U")[0]}</b>
                   )}
@@ -1202,5 +1219,21 @@ function History({ rows }: { rows: C[] }) {
         )}
       </div>
     </>
+  );
+}
+
+function Pagination({ page, totalPages, total, onChange }: {
+  page: number;
+  totalPages: number;
+  total: number;
+  onChange: (page: number) => void;
+}) {
+  return (
+    <nav className="pagination" aria-label="Pagination">
+      <span>{total.toLocaleString()} records</span>
+      <button disabled={page <= 1} onClick={() => onChange(page - 1)}>Previous</button>
+      <strong>{page} / {totalPages}</strong>
+      <button disabled={page >= totalPages} onClick={() => onChange(page + 1)}>Next</button>
+    </nav>
   );
 }

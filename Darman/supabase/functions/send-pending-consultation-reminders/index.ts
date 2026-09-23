@@ -40,8 +40,8 @@ Deno.serve(async (request) => {
         userId: reminder.doctor_id,
         title: "Consultation requests waiting",
         body: count === 1
-          ? "You have 1 consultation request waiting for your response."
-          : `You have ${count} consultation requests waiting for your response.`,
+          ? "You have 1 consultation request waiting for your response"
+          : `You have ${count} consultation requests waiting for your response`,
         ttl: "1800s",
         data: {
           type: "pending_consultation_reminder",

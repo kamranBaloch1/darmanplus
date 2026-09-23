@@ -100,6 +100,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   ChatMessageModel? _replyingTo;
 
   ConsultationSessionModel? _session;
+  int? _preSessionMessageLimit;
 
   bool _loading = true;
   bool _loadingOlder = false;
@@ -164,12 +165,18 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
   Future<void> _initialize() async {
     try {
-      final room = await _repository.getOrCreateRoom(widget.bookingId);
+      final results = await Future.wait<Object>([
+        _repository.getOrCreateRoom(widget.bookingId),
+        _repository.getPreSessionMessageLimit(),
+      ]);
+      final room = results[0] as ChatRoomModel;
+      final preSessionMessageLimit = results[1] as int;
 
       if (!mounted) return;
 
       setState(() {
         _room = room;
+        _preSessionMessageLimit = preSessionMessageLimit;
         _loading = false;
       });
       _startTypingChannel(room);
@@ -1155,8 +1162,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   }
 
   bool get _preSessionLimitReached {
+    final limit = _preSessionMessageLimit;
     return _isPreConsultationChat &&
-        _myPreSessionMessageCount >= ChatRepository.preSessionMessageLimit;
+        (limit == null || _myPreSessionMessageCount >= limit);
   }
 
   bool get _isPreConsultationChat {
@@ -1223,7 +1231,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
   int? get _messageCounterTotal {
     if (_isPreConsultationChat) {
-      return ChatRepository.preSessionMessageLimit;
+      return _preSessionMessageLimit;
     }
     if (_session?.isFollowUpUpcoming == true || _isPostConsultationChat) {
       return ChatRepository.upcomingFollowUpMessageLimit;

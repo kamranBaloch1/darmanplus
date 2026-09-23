@@ -89,7 +89,7 @@ class AppErrorMessage {
     }
 
     if (lower.contains('pre-consultation message limit')) {
-      return 'You have used your 15 messages before the consultation starts.';
+      return 'You have used all messages available before the consultation starts.';
     }
 
     if (_containsAny(lower, const [

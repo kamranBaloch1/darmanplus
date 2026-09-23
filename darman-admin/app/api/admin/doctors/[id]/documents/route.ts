@@ -43,7 +43,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (position < 0) return NextResponse.json({ error: "The original document was not found on this profile." }, { status: 404 });
   const extension = file.type === "application/pdf" ? "pdf" : file.type === "image/png" ? "png" : "jpg";
   const nextPath = `${id}/${Date.now()}-replacement.${extension}`;
-  const { error: uploadError } = await access.client.storage.from("doctor-documents").upload(nextPath, await file.arrayBuffer(), { contentType: file.type, upsert: false });
+  const { error: uploadError } = await access.client.storage.from("doctor-documents").upload(nextPath, await file.arrayBuffer(), { contentType: file.type, upsert: false, cacheControl: "31536000" });
   if (uploadError) return NextResponse.json({ error: uploadError.message }, { status: 500 });
   documents[position] = nextPath;
   const { error: updateError } = await access.client.from("users").update({ doctor_documents: documents, is_doctor_verified: false, updated_at: new Date().toISOString() }).eq("uid", id);

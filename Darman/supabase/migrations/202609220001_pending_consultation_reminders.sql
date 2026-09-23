@@ -23,10 +23,10 @@ begin
     select b.id
     from public.bookings b
     where b.status = 'pending'
-      and b.created_at <= now() - interval '1 hour'
+      and b.created_at <= now() - interval '10 minutes'
       and (
         b.pending_request_reminded_at is null
-        or b.pending_request_reminded_at <= now() - interval '30 minutes'
+        or b.pending_request_reminded_at <= now() - interval '10 minutes'
       )
     order by b.created_at
     for update skip locked
@@ -78,7 +78,7 @@ where jobname = 'send-darman-pending-consultation-reminders';
 
 select cron.schedule(
   'send-darman-pending-consultation-reminders',
-  '*/30 * * * *',
+  '*/10 * * * *',
   $cron$
     select net.http_post(
       url := (
