@@ -421,7 +421,7 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                                   foregroundColor: Colors.black,
                                   textStyle: const TextStyle(
                                     fontSize: 13,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ),

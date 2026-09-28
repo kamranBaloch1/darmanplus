@@ -2,6 +2,7 @@ import 'package:darmaan/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:darmaan/widgets/auth_customer_care_button.dart';
 
 class DoctorVerificationPendingScreen extends StatefulWidget {
   const DoctorVerificationPendingScreen({super.key});
@@ -101,6 +102,8 @@ class _DoctorVerificationPendingScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFAFBFD),
+      floatingActionButton: const AuthCustomerCareButton(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 20.h),

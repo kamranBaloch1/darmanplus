@@ -88,6 +88,10 @@ class AppErrorMessage {
       return 'You have used your 5 waiting-period messages. The chat fully opens on the follow-up date.';
     }
 
+    if (lower.contains('refunded consultation chat is read-only')) {
+      return 'This consultation was refunded. You can view the chat history, but new messages are disabled.';
+    }
+
     if (lower.contains('pre-consultation message limit')) {
       return 'You have used all messages available before the consultation starts.';
     }

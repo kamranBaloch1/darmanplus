@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     total = rowCount ?? 0;
     if (role === "patient") patients = data ?? []; else doctors = data ?? [];
   } else if (["consultations", "followups"].includes(scope)) {
-    let query = client.from("bookings").select("id,doctor_id,patient_id,status,consultation_fee,created_at,completed_at,follow_up_date", { count: "exact" }).order("created_at", { ascending: false }).range(from, to);
+    let query = client.from("bookings").select("id,doctor_id,patient_id,status,consultation_fee,created_at,completed_at,follow_up_date,admin_refunded_at", { count: "exact" }).order("created_at", { ascending: false }).range(from, to);
     if (scope === "followups") query = query.not("follow_up_date", "is", null);
     const { data: bookings, error, count: rowCount } = await query;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     const [{ data: doctorRows }, { data: patientRows }, { data: bookings, count: bookingCount }] = await Promise.all([
       client.from("users").select(userFields).eq("role", "doctor").order("created_at", { ascending: false }).limit(8),
       client.from("users").select(userFields).eq("role", "patient").order("created_at", { ascending: false }).limit(8),
-      client.from("bookings").select("id,doctor_id,patient_id,status,consultation_fee,created_at,completed_at,follow_up_date", { count: "exact" }).order("created_at", { ascending: false }).limit(20),
+      client.from("bookings").select("id,doctor_id,patient_id,status,consultation_fee,created_at,completed_at,follow_up_date,admin_refunded_at", { count: "exact" }).order("created_at", { ascending: false }).limit(20),
     ]);
     doctors = doctorRows ?? []; patients = patientRows ?? []; total = bookingCount ?? 0;
     const byId = new Map([...doctors, ...patients].map((person) => [person.uid, person]));

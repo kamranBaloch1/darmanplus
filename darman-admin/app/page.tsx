@@ -45,6 +45,7 @@ type C = {
   consultation_fee: number;
   created_at: string;
   completed_at?: string;
+  admin_refunded_at?: string;
   follow_up_date?: string;
   doctor: U | null;
   patient: U | null;
@@ -1123,7 +1124,7 @@ function Overview({
               <b>{x.doctor?.name || "Doctor"}</b>
               <small>with {x.patient?.name || "Patient"}</small>
             </span>
-            <i className={`status ${x.status}`}>{x.status}</i>
+            <i className={`status ${x.admin_refunded_at ? "refunded" : x.status}`}>{x.admin_refunded_at ? "refunded" : x.status}</i>
             <strong>Rs. {x.consultation_fee}</strong>
             <small>
               {new Date(x.completed_at ?? x.created_at).toLocaleDateString()}
@@ -1207,7 +1208,7 @@ function History({ rows }: { rows: C[] }) {
           >
             <span>{x.doctor?.name || "—"}</span>
             <span>{x.patient?.name || "—"}</span>
-            <i className={`status ${x.status}`}>{x.status}</i>
+            <i className={`status ${x.admin_refunded_at ? "refunded" : x.status}`}>{x.admin_refunded_at ? "refunded" : x.status}</i>
             <span>Rs. {x.consultation_fee}</span>
             <span>
               {new Date(x.completed_at ?? x.created_at).toLocaleDateString()}

@@ -4,7 +4,11 @@ enum WalletTransactionType {
   walletRecovery,
   consultationPayment,
   doctorEarning,
-  platformCommission;
+  platformCommission,
+  consultationRefund,
+  doctorRefundDebit,
+  platformCommissionRefund,
+  unknown;
 
   static WalletTransactionType fromDatabase(String? value) {
     return switch (value) {
@@ -14,7 +18,10 @@ enum WalletTransactionType {
       'consultation_payment' => WalletTransactionType.consultationPayment,
       'doctor_earning' => WalletTransactionType.doctorEarning,
       'platform_commission' => WalletTransactionType.platformCommission,
-      _ => throw FormatException('Unknown wallet transaction type: $value'),
+      'consultation_refund' => WalletTransactionType.consultationRefund,
+      'doctor_refund_debit' => WalletTransactionType.doctorRefundDebit,
+      'platform_commission_refund' => WalletTransactionType.platformCommissionRefund,
+      _ => WalletTransactionType.unknown,
     };
   }
 
@@ -25,6 +32,10 @@ enum WalletTransactionType {
     WalletTransactionType.consultationPayment => 'consultation_payment',
     WalletTransactionType.doctorEarning => 'doctor_earning',
     WalletTransactionType.platformCommission => 'platform_commission',
+    WalletTransactionType.consultationRefund => 'consultation_refund',
+    WalletTransactionType.doctorRefundDebit => 'doctor_refund_debit',
+    WalletTransactionType.platformCommissionRefund => 'platform_commission_refund',
+    WalletTransactionType.unknown => 'unknown',
   };
 }
 
@@ -62,22 +73,27 @@ class WalletTransactionModel {
   double get absoluteAmount => amount.abs();
 
   factory WalletTransactionModel.fromMap(Map<String, dynamic> map) {
+    final metadata = map['metadata'] is Map
+        ? Map<String, dynamic>.from(map['metadata'] as Map)
+        : const <String, dynamic>{};
+    final storedType = map['transaction_type']?.toString();
+    final displayType = switch (metadata['ledger_kind']?.toString()) {
+      'consultation_refund' => WalletTransactionType.consultationRefund,
+      'doctor_refund_debit' => WalletTransactionType.doctorRefundDebit,
+      _ => WalletTransactionType.fromDatabase(storedType),
+    };
     return WalletTransactionModel(
       id: map['id']?.toString() ?? '',
       userId: map['user_id']?.toString(),
       bookingId: map['booking_id']?.toString(),
       counterpartName: map['counterpart_name']?.toString().trim(),
-      type: WalletTransactionType.fromDatabase(
-        map['transaction_type']?.toString(),
-      ),
+      type: displayType,
       amount: (map['amount'] as num?)?.toDouble() ?? 0,
       currency: map['currency']?.toString() ?? 'PKR',
       balanceAfter: (map['balance_after'] as num?)?.toDouble(),
       reservedBalanceAfter: (map['reserved_balance_after'] as num?)?.toDouble(),
       description: map['description']?.toString() ?? '',
-      metadata: map['metadata'] is Map
-          ? Map<String, dynamic>.from(map['metadata'] as Map)
-          : const {},
+      metadata: metadata,
       createdAt:
           DateTime.tryParse(map['created_at']?.toString() ?? '')?.toUtc() ??
           DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),

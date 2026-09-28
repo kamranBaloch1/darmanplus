@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:darmaan/widgets/auth_customer_care_button.dart';
 
 import 'doctor_document_screen.dart';
 
@@ -92,6 +93,8 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      floatingActionButton: const AuthCustomerCareButton(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
       body: SafeArea(
         child: Column(
           children: [

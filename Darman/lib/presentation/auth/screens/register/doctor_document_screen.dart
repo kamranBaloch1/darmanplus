@@ -10,6 +10,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:darmaan/widgets/auth_customer_care_button.dart';
 
 class DoctorDocumentScreen extends StatefulWidget {
   const DoctorDocumentScreen({super.key});
@@ -305,6 +306,8 @@ class _DoctorDocumentScreenState extends State<DoctorDocumentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFAFBFD),
+      floatingActionButton: const AuthCustomerCareButton(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
       body: SafeArea(
         child: Column(
           children: [

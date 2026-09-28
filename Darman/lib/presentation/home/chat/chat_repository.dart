@@ -91,7 +91,7 @@ class ChatRepository {
             'session_start_responded_at, started_at, completed_at, '
             'call_started_at, '
             'call_ended_at, follow_up_date, follow_up_scheduled_at, '
-            'follow_up_ended_at',
+            'follow_up_ended_at, admin_refunded_at',
           )
           .eq('id', bookingId)
           .single();

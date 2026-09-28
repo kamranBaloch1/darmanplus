@@ -18,6 +18,7 @@ class ConsultationSessionModel {
     this.followUpDate,
     this.followUpScheduledAt,
     this.followUpEndedAt,
+    this.adminRefundedAt,
   });
 
   final String bookingId;
@@ -32,6 +33,9 @@ class ConsultationSessionModel {
   final DateTime? followUpDate;
   final DateTime? followUpScheduledAt;
   final DateTime? followUpEndedAt;
+  final DateTime? adminRefundedAt;
+
+  bool get isRefunded => adminRefundedAt != null;
 
   bool get isInProgress => bookingStatus == 'inProgress';
   bool get isEnded => bookingStatus == 'completed' || bookingStatus == 'cancelled';
@@ -78,6 +82,7 @@ class ConsultationSessionModel {
       followUpDate: _dateOnlyValue(map['follow_up_date']),
       followUpScheduledAt: _date(map['follow_up_scheduled_at']),
       followUpEndedAt: _date(map['follow_up_ended_at']),
+      adminRefundedAt: _date(map['admin_refunded_at']),
     );
   }
 

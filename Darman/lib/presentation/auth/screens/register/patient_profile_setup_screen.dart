@@ -10,6 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:darmaan/widgets/auth_customer_care_button.dart';
 
 class PatientProfileSetupScreen extends StatefulWidget {
   const PatientProfileSetupScreen({super.key});
@@ -174,6 +175,8 @@ class _PatientProfileSetupScreenState extends State<PatientProfileSetupScreen> {
       canPop: false,
       child: Scaffold(
         backgroundColor: const Color(0xFFF8FAFC),
+        floatingActionButton: const AuthCustomerCareButton(),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
         body: SafeArea(
           child: Column(
             children: [

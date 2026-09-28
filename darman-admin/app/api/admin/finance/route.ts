@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
   const to = request.nextUrl.searchParams.get("to");
   let transactionQuery = client
     .from("wallet_transactions")
-    .select("id,user_id,booking_id,transaction_type,amount,description,created_at")
-    .in("transaction_type", ["wallet_top_up", "consultation_payment", "doctor_earning", "platform_commission"])
+    .select("id,user_id,booking_id,transaction_type,amount,description,metadata,created_at")
+    .in("transaction_type", ["wallet_top_up", "wallet_top_up_reversal", "consultation_payment", "doctor_earning", "platform_commission", "platform_commission_refund"])
     .order("created_at", { ascending: false });
   if (from) transactionQuery = transactionQuery.gte("created_at", from);
   if (to) transactionQuery = transactionQuery.lte("created_at", to);
@@ -67,21 +67,25 @@ export async function GET(request: NextRequest) {
   }
 
   const excludedBookings = new Set((testBookings ?? []).map((booking) => booking.id));
-  const rows = (transactions ?? []).filter(
-    (row) =>
-      !excludedBookings.has(row.booking_id ?? "") &&
+  const rows = (transactions ?? []).filter((row) => {
+    const metadata = row.metadata && typeof row.metadata === "object" ? row.metadata as Record<string, unknown> : {};
+    const effectiveBookingId = row.booking_id ?? String(metadata.refund_booking_id ?? "");
+    return !excludedBookings.has(effectiveBookingId) &&
       !(
         row.transaction_type === "wallet_top_up" &&
+        metadata.ledger_kind !== "consultation_refund" &&
         financeExcludedWalletUsers.has(row.user_id ?? "")
-      ),
-  );
+      );
+  });
   const people = (users ?? []).filter(
     (user) => !financeExcludedWalletUsers.has(user.uid),
   );
-  const topUps = rows.filter((row) => row.transaction_type === "wallet_top_up");
-  const commissions = rows.filter((row) => row.transaction_type === "platform_commission");
+  const ledgerKind = (row: (typeof rows)[number]) => row.metadata && typeof row.metadata === "object" ? String((row.metadata as Record<string, unknown>).ledger_kind ?? "") : "";
+  const topUps = rows.filter((row) => row.transaction_type === "wallet_top_up" && ledgerKind(row) !== "consultation_refund");
+  const patientRefunds = rows.filter((row) => ledgerKind(row) === "consultation_refund");
+  const commissions = rows.filter((row) => row.transaction_type === "platform_commission" || row.transaction_type === "platform_commission_refund");
   const consultationPayments = rows.filter((row) => row.transaction_type === "consultation_payment");
-  const doctorEarnings = rows.filter((row) => row.transaction_type === "doctor_earning");
+  const doctorEarnings = rows.filter((row) => row.transaction_type === "doctor_earning" || ledgerKind(row) === "doctor_refund_debit");
   const doctors = people
     .filter((user) => user.role === "doctor")
     .map((user) => ({
@@ -112,7 +116,7 @@ export async function GET(request: NextRequest) {
   const doctorPayable = doctors.reduce((sum, doctor) => sum + doctor.unpaid, 0);
   const patientAvailable = patients.reduce((sum, patient) => sum + Number(patient.wallet_balance ?? 0), 0);
   const patientReserved = patients.reduce((sum, patient) => sum + Number(patient.wallet_reserved_balance ?? 0), 0);
-  const grossConsultations = consultationPayments.reduce((sum, row) => sum + Math.abs(Number(row.amount ?? 0)), 0);
+  const grossConsultations = consultationPayments.reduce((sum, row) => sum + Math.abs(Number(row.amount ?? 0)), 0) - patientRefunds.reduce((sum, row) => sum + Math.abs(Number(row.amount ?? 0)), 0);
   const revenue = commissions.reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
 
   return NextResponse.json({
@@ -121,7 +125,7 @@ export async function GET(request: NextRequest) {
       topUpCount: topUps.length,
       revenue,
       grossConsultations,
-      consultationCount: consultationPayments.length,
+      consultationCount: Math.max(0, consultationPayments.length - patientRefunds.length),
       doctorEarnings: doctorEarnings.reduce((sum, row) => sum + Number(row.amount ?? 0), 0),
       effectiveCommissionRate: grossConsultations > 0 ? (revenue / grossConsultations) * 100 : 0,
       doctorPayable,
@@ -144,6 +148,7 @@ export async function GET(request: NextRequest) {
     recentTopUps: topUps.slice(0, 50),
     recentActivity: rows.slice(0, 50).map((row) => ({
       ...row,
+      transaction_type: ledgerKind(row) || row.transaction_type,
       userName: row.user_id ? peopleById.get(row.user_id)?.name ?? null : null,
     })),
   });

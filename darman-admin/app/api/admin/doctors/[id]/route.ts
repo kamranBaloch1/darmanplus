@@ -48,7 +48,7 @@ export async function GET(
   const [bookingsResult, ratingsResult, walletResult] = await Promise.all([
     client
       .from("bookings")
-      .select("id,patient_id,status,consultation_fee,gross_fee,commission_amount,doctor_earning,created_at,accepted_at,started_at,completed_at,cancelled_at,cancellation_reason,follow_up_date,follow_up_ended_at")
+      .select("id,patient_id,status,consultation_fee,gross_fee,commission_amount,doctor_earning,admin_refunded_at,admin_refund_reason,created_at,accepted_at,started_at,completed_at,cancelled_at,cancellation_reason,follow_up_date,follow_up_ended_at")
       .eq("doctor_id", id)
       .order("created_at", { ascending: false })
       .limit(100),

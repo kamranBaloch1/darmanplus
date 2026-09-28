@@ -1145,6 +1145,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   bool get _isDoctor => _room?.doctorId == _repository.currentUserId;
 
   bool get _canComposeMessages {
+    if (_session?.isRefunded == true) return false;
     return (_room?.isActive == true && _session?.isEnded != true) ||
         _session?.hasUnendedFollowUp == true ||
         _isPostConsultationChat;
@@ -1217,6 +1218,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   }
 
   int? get _messageCounterUsed {
+    if (_session?.isRefunded == true) return null;
     if (_isPreConsultationChat) {
       return _myPreSessionMessageCount;
     }
@@ -1230,6 +1232,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   }
 
   int? get _messageCounterTotal {
+    if (_session?.isRefunded == true) return null;
     if (_isPreConsultationChat) {
       return _preSessionMessageLimit;
     }
@@ -2654,7 +2657,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                     used: _messageCounterUsed!,
                     total: _messageCounterTotal!,
                   ),
-                if (canCompose &&
+                if (_session?.isRefunded == true)
+                  const _ClosedNotice(
+                    message:
+                        'This consultation was refunded. Chat history is view-only.',
+                  )
+                else if (canCompose &&
                     !_preSessionLimitReached &&
                     !_upcomingFollowUpLimitReached &&
                     !_postConsultationLimitReached)

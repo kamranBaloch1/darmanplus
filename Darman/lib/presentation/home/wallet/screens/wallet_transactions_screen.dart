@@ -206,14 +206,12 @@ class _WalletTransactionsScreenState
         .where(
           (item) =>
               _isInsideSelectedPeriod(item) &&
-              item.type ==
-                  WalletTransactionType.doctorEarning &&
-              item.isCredit,
+              (item.type == WalletTransactionType.doctorEarning ||
+                  item.type == WalletTransactionType.doctorRefundDebit),
         )
         .fold<double>(
           0,
-          (total, item) =>
-              total + item.absoluteAmount,
+          (total, item) => total + item.amount,
         )
     : 0.0;
 
@@ -1468,6 +1466,18 @@ class _TransactionRow extends StatelessWidget {
 
       WalletTransactionType.platformCommission =>
         'Service fee for consultation',
+
+      WalletTransactionType.consultationRefund =>
+        'Consultation payment returned',
+
+      WalletTransactionType.doctorRefundDebit =>
+        'Consultation earning refunded',
+
+      WalletTransactionType.platformCommissionRefund =>
+        'Service fee reversed',
+
+      WalletTransactionType.unknown =>
+        'Wallet activity',
     };
   }
 
@@ -1544,6 +1554,14 @@ class _TransactionRow extends StatelessWidget {
       case WalletTransactionType.platformCommission:
         return Icons
             .receipt_long_outlined;
+
+      case WalletTransactionType.consultationRefund:
+      case WalletTransactionType.doctorRefundDebit:
+      case WalletTransactionType.platformCommissionRefund:
+        return Icons.undo_rounded;
+
+      case WalletTransactionType.unknown:
+        return Icons.receipt_long_outlined;
     }
   }
 
@@ -1590,6 +1608,18 @@ class _TransactionRow extends StatelessWidget {
 
       WalletTransactionType.platformCommission =>
         'Platform commission',
+
+      WalletTransactionType.consultationRefund =>
+        'Consultation refund',
+
+      WalletTransactionType.doctorRefundDebit =>
+        'Refund deduction',
+
+      WalletTransactionType.platformCommissionRefund =>
+        'Commission refund',
+
+      WalletTransactionType.unknown =>
+        'Wallet activity',
     };
   }
 }
@@ -1627,6 +1657,8 @@ class _TransactionDetailsSheet
     final counterpartLabel = switch (transaction.type) {
       WalletTransactionType.doctorEarning => 'Patient',
       WalletTransactionType.consultationPayment => 'Doctor',
+      WalletTransactionType.consultationRefund => 'Doctor',
+      WalletTransactionType.doctorRefundDebit => 'Patient',
       _ => null,
     };
 
@@ -2048,6 +2080,18 @@ String _transactionTitle(
 
     WalletTransactionType.platformCommission =>
       'Platform commission',
+
+    WalletTransactionType.consultationRefund =>
+      'Consultation refund',
+
+    WalletTransactionType.doctorRefundDebit =>
+      'Refund deduction',
+
+    WalletTransactionType.platformCommissionRefund =>
+      'Commission refund',
+
+    WalletTransactionType.unknown =>
+      'Wallet activity',
   };
 }
 
