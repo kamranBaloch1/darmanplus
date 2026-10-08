@@ -19,6 +19,7 @@ import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:darmaan/presentation/home/patient/widgets/patient_doctor_list_tile.dart';
+import 'package:darmaan/presentation/home/chat/chat_room.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 class PatientHomeScreen extends StatefulWidget {
@@ -375,6 +376,29 @@ class _PatientHomeScreenState extends State<PatientHomeScreen>
   }
 
   void _openConsultation(UserModel doctor, {BookingModel? booking}) {
+    if (booking != null &&
+        (booking.status == BookingStatus.accepted ||
+            booking.status == BookingStatus.inProgress)) {
+      final subtitle = [doctor.specialization, doctor.title]
+          .whereType<String>()
+          .map((value) => value.trim())
+          .where((value) => value.isNotEmpty)
+          .join(' | ');
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChatRoomScreen(
+            bookingId: booking.id,
+            peerName: doctor.name,
+            peerAvatarUrl: doctor.profileImage,
+            peerSubtitle: subtitle.isEmpty ? 'Doctor' : subtitle,
+            peerVerified: doctor.isDoctorVerified,
+            onPeerTap: () => _openDoctorDetails(doctor),
+          ),
+        ),
+      );
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(

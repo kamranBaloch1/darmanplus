@@ -1146,6 +1146,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
   bool get _canComposeMessages {
     if (_session?.isRefunded == true) return false;
+    if (_session?.bookingStatus == 'pending') return false;
     return (_room?.isActive == true && _session?.isEnded != true) ||
         _session?.hasUnendedFollowUp == true ||
         _isPostConsultationChat;
@@ -1170,8 +1171,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
   bool get _isPreConsultationChat {
     final status = _session?.bookingStatus;
-    return (status == 'pending' || status == 'accepted') &&
-        _session?.startedAt == null;
+    return status == 'pending' && _session?.startedAt == null;
   }
 
   int get _myUpcomingFollowUpMessageCount {
@@ -1219,6 +1219,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
   int? get _messageCounterUsed {
     if (_session?.isRefunded == true) return null;
+    if (_session?.bookingStatus == 'pending') return null;
     if (_isPreConsultationChat) {
       return _myPreSessionMessageCount;
     }
@@ -1233,6 +1234,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
   int? get _messageCounterTotal {
     if (_session?.isRefunded == true) return null;
+    if (_session?.bookingStatus == 'pending') return null;
     if (_isPreConsultationChat) {
       return _preSessionMessageLimit;
     }
@@ -1268,7 +1270,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
   Future<void> _cancelAcceptedAppointment() async {
     if (_isDoctor ||
-        _session?.bookingStatus != 'accepted' ||
+        _session?.bookingStatus != 'pending' ||
         _cancellingAppointment) {
       return;
     }
@@ -2486,24 +2488,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                 // ---------------------------------------------------------
                 if (!_isDoctor &&
                     _session != null &&
+                    _session?.bookingStatus == 'pending' &&
                     _session?.isFollowUpOpen != true)
                   _PatientAppointmentStatusBar(
                     session: _session!,
                     doctorName: widget.peerName,
                     cancelling: _cancellingAppointment,
                     onCancel: _cancelAcceptedAppointment,
-                  ),
-
-                // ---------------------------------------------------------
-                // WAITING TO START
-                // ---------------------------------------------------------
-                if (_isDoctor &&
-                    _session?.bookingStatus == 'accepted' &&
-                    _session?.isInProgress != true)
-                  _SessionRequestBar(
-                    pending: _session?.isRequestPending == true,
-                    busy: _sessionActionBusy,
-                    onRequest: _requestSessionStart,
                   ),
 
                 // ---------------------------------------------------------
@@ -2532,9 +2523,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                   child: _messages.isEmpty
                       ? _EmptyChat(
                           peerName: widget.peerName,
-                          connected:
-                              !_isDoctor &&
-                              _session?.bookingStatus == 'accepted',
+                          connected: _session?.isInProgress == true,
                         )
                       : ListView.builder(
                           controller: _scrollController,
@@ -2662,6 +2651,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                     message:
                         'This consultation was refunded. Chat history is view-only.',
                   )
+                else if (_session?.bookingStatus == 'pending')
+                  const _ClosedNotice(
+                    message:
+                        'Chat will open after the doctor accepts your consultation request.',
+                  )
                 else if (canCompose &&
                     !_preSessionLimitReached &&
                     !_upcomingFollowUpLimitReached &&
@@ -2723,9 +2717,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     final inProgress = _session?.isInProgress == true;
     final canCall = inProgress || _session?.isFollowUpOpen == true;
     final showLockedCall =
-        ((_session?.bookingStatus == 'accepted' && !_isDoctor) ||
-            _session?.isFollowUpUpcoming == true) &&
-        !canCall;
+        _session?.isFollowUpUpcoming == true && !canCall;
     final hasActiveCall =
         widget.onReturnToCall != null && _session?.callEndedAt == null;
 
@@ -5650,7 +5642,7 @@ class _PatientAppointmentStatusBar extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Appointment accepted',
+                      'Consultation active',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.outfit(
@@ -5661,7 +5653,7 @@ class _PatientAppointmentStatusBar extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '$doctorName will start the consultation soon.',
+                      'Your consultation with $doctorName is in progress.',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.outfit(
@@ -5674,7 +5666,8 @@ class _PatientAppointmentStatusBar extends StatelessWidget {
                   ],
                 ),
               ),
-              SizedBox(
+              if (session.bookingStatus == 'pending')
+                SizedBox(
                 height: 38,
                 child: TextButton(
                   onPressed: cancelling ? null : onCancel,
@@ -5752,7 +5745,7 @@ class _PatientAppointmentStatusBar extends StatelessWidget {
                 ],
               ),
             ),
-            if (session.bookingStatus == 'accepted') ...[
+            if (session.bookingStatus == 'pending') ...[
               const SizedBox(width: 8),
               SizedBox(
                 height: 34,
@@ -5828,11 +5821,11 @@ class _PatientAppointmentStatusBar extends StatelessWidget {
     }
     if (session.bookingStatus == 'accepted') {
       return _PatientStatusData(
-        title: 'Appointment accepted',
-        message: 'Waiting for $doctorName to start the consultation.',
-        icon: Icons.schedule_rounded,
-        color: AppColors.brand,
-        background: AppColors.brand.withValues(alpha: 0.055),
+        title: 'In consultation',
+        message: 'Your consultation is active.',
+        icon: Icons.medical_services_outlined,
+        color: const Color(0xFF16834A),
+        background: const Color(0xFFE7F6EC),
       );
     }
     return const _PatientStatusData(

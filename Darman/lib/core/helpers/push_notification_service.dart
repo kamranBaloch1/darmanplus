@@ -260,7 +260,8 @@ class PushNotificationService {
     await notifications.initialize(settings: settings);
 
     if (type == 'consultation_completed' ||
-        type == 'patient_cancelled_appointment') {
+        type == 'patient_cancelled_appointment' ||
+        type == 'consultation_cancelled') {
       await notifications.cancel(id: _activeConsultationNotificationId);
       return;
     }

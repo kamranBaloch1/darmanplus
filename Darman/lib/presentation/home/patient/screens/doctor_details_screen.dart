@@ -1057,9 +1057,9 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen>
     if (booking != null && booking.status == BookingStatus.accepted) {
       return _ActiveBookingBar(
         bookingId: booking.id,
-        icon: Icons.check_circle_outline_rounded,
-        title: 'Appointment confirmed',
-        subtitle: 'The doctor accepted your request',
+        icon: Icons.medical_services_outlined,
+        title: 'In consultation',
+        subtitle: 'Your consultation is active',
         onMessage: () => _openChat(booking),
       );
     }

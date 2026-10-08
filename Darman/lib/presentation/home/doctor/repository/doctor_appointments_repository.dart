@@ -131,8 +131,11 @@ class DoctorAppoinmentsRepository {
       final updated = await _supabase
           .from('bookings')
           .update({
-            'status': BookingStatus.accepted.name,
+            'status': BookingStatus.inProgress.name,
             'accepted_at': now.toIso8601String(),
+            'started_at': now.toIso8601String(),
+            'session_start_status': 'none',
+            'session_start_responded_at': now.toIso8601String(),
             'updated_at': now.toIso8601String(),
           })
           .eq('id', bookingId)

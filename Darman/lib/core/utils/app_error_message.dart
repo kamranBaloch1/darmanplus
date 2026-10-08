@@ -96,6 +96,10 @@ class AppErrorMessage {
       return 'You have used all messages available before the consultation starts.';
     }
 
+    if (lower.contains('chat unlocks after the doctor accepts')) {
+      return 'Chat will open after the doctor accepts your consultation request.';
+    }
+
     if (_containsAny(lower, const [
       'duplicate key',
       'already exists',

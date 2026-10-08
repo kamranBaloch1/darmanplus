@@ -58,8 +58,7 @@ class BookingModel {
   final DateTime? followUpDoctorEndSeenAt;
   final DateTime updatedAt;
 
-  bool get canPatientCancel =>
-      status == BookingStatus.pending || status == BookingStatus.accepted;
+  bool get canPatientCancel => status == BookingStatus.pending;
   bool get canUseVideoCall => status == BookingStatus.inProgress;
   bool get hasPendingSessionRequest =>
       status == BookingStatus.accepted &&

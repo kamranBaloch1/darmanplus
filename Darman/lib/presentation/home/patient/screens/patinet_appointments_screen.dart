@@ -401,8 +401,7 @@ class _AppointmentCard
   }
 
   bool get _canCancel =>
-      booking.status == BookingStatus.pending ||
-      booking.status == BookingStatus.accepted;
+      booking.status == BookingStatus.pending;
 
   String get _doctorSubtitle {
     final specialization = doctor?.specialization?.trim() ?? '';
@@ -429,7 +428,7 @@ class _AppointmentCard
         return 'Waiting';
 
       case BookingStatus.accepted:
-        return 'Confirmed';
+        return 'In consultation';
 
       case BookingStatus.inProgress:
         return 'In consultation';

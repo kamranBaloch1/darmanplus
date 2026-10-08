@@ -42,8 +42,8 @@ Deno.serve(async (request) => {
 
     if (bookingError || !booking) throw new Error("Booking not found");
     if (booking.doctor_id !== user.id) throw new Error("Access denied");
-    if (!["accepted", "cancelled"].includes(booking.status)) {
-      throw new Error("Booking must be accepted or cancelled");
+    if (!["inProgress", "cancelled"].includes(booking.status)) {
+      throw new Error("Booking must be started or cancelled");
     }
 
     const updatedAt = new Date(booking.updated_at).getTime();
@@ -58,7 +58,7 @@ Deno.serve(async (request) => {
       .maybeSingle();
 
     const doctorName = doctor?.name?.trim() || "Your doctor";
-    const accepted = booking.status === "accepted";
+    const accepted = booking.status === "inProgress";
     const title = accepted
       ? "Consultation accepted"
       : "Consultation request declined";

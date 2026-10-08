@@ -24,7 +24,7 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
   final ImagePicker _picker = ImagePicker();
 
   static const String businessName = 'FindUs';
-  static const String accountNumber = '03318335247';
+  static const String accountNumber = '984336164';
 
   static const String qrAsset =
       'assets/images/branding/jazzcash_business_qr.jpeg';
@@ -479,7 +479,7 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
-                            'or pay with jazzcash',
+                            'or pay with jazzcash till ID',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey.shade500,

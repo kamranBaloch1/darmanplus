@@ -1414,7 +1414,7 @@ class _AppointmentTile extends StatelessWidget {
       case BookingStatus.pending:
         return 'Consultation Request';
       case BookingStatus.accepted:
-        return 'Accepted';
+        return 'In consultation';
       case BookingStatus.inProgress:
         return 'In progress';
       case BookingStatus.completed:
@@ -1441,9 +1441,9 @@ class _AppointmentTile extends StatelessWidget {
         );
       case BookingStatus.accepted:
         return (
-          label: 'Accepted',
-          color: const Color(0xFF175CD3),
-          bg: const Color(0xFFEAF3FF),
+          label: 'In consultation',
+          color: const Color(0xFF16834A),
+          bg: const Color(0xFFE7F6EC),
         );
       case BookingStatus.inProgress:
         return (

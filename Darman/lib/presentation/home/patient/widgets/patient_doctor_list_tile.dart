@@ -35,8 +35,8 @@ class PatientDoctorListTile extends StatelessWidget {
         ? 'Follow-up'
         : switch (appointmentStatus) {
             BookingStatus.pending => 'Pending',
-            BookingStatus.accepted => 'Accepted',
-            BookingStatus.inProgress => 'In progress',
+            BookingStatus.accepted => 'In consultation',
+            BookingStatus.inProgress => 'In consultation',
             _ => null,
           };
     final appointmentColor = isFollowUp
