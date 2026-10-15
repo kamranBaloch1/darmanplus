@@ -6,6 +6,7 @@ import 'package:darmaan/presentation/home/wallet/screens/jazzcash_payment_screen
 import 'package:darmaan/widgets/app_shimmer.dart';
 import 'package:darmaan/presentation/home/wallet/repository/wallet_repository.dart';
 import 'package:darmaan/presentation/home/wallet/screens/add_money_screen.dart';
+import 'package:darmaan/presentation/home/wallet/screens/doctor_withdrawal_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -126,6 +127,17 @@ class _WalletTransactionsScreenState
     if (added == true && mounted) await _refresh();
   }
 
+  Future<void> _openWithdrawal(WalletSummaryModel summary) async {
+    final requested = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => DoctorWithdrawalScreen(
+          availableBalance: summary.balance,
+        ),
+      ),
+    );
+    if (requested == true && mounted) await _refresh();
+  }
+
   // ===========================================================================
   // BUILD
   // ===========================================================================
@@ -201,20 +213,6 @@ class _WalletTransactionsScreenState
             data.items,
           );
 
-       final doctorEarnings = widget.isDoctor
-    ? data.items
-        .where(
-          (item) =>
-              _isInsideSelectedPeriod(item) &&
-              (item.type == WalletTransactionType.doctorEarning ||
-                  item.type == WalletTransactionType.doctorRefundDebit),
-        )
-        .fold<double>(
-          0,
-          (total, item) => total + item.amount,
-        )
-    : 0.0;
-
           return RefreshIndicator(
             color: AppColors.brand,
             backgroundColor: Colors.white,
@@ -227,25 +225,10 @@ class _WalletTransactionsScreenState
                     summary: data.summary,
                     showAddMoney: !widget.isDoctor,
                     onAddMoney: () => _openAddMoney(data.summary),
+                    showWithdraw: widget.isDoctor,
+                    onWithdraw: () => _openWithdrawal(data.summary),
                   ),
                 ),
-               if (widget.isDoctor)
-  SliverToBoxAdapter(
-    child: _WalletPeriodFilter(
-      isDoctor: true,
-      selected: _earningsPeriod,
-      selectedDate: _earningsDate,
-      amount: doctorEarnings,
-      onChanged: (value) {
-        setState(() {
-          _earningsPeriod = value;
-          _earningsDate = DateTime.now();
-        });
-      },
-      onDateTap: _pickEarningsDate,
-    ),
-  ),
-              
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
@@ -279,20 +262,14 @@ class _WalletTransactionsScreenState
 List<WalletTransactionModel> _filteredItems(
   List<WalletTransactionModel> items,
 ) {
-  // Doctors use the selected Day/Week/Month period.
-  // Patients see all transactions without a date-period filter.
-  final periodItems = widget.isDoctor
-      ? items.where(_isInsideSelectedPeriod).toList()
-      : items;
-
   switch (_filter) {
     case _TransactionFilter.moneyIn:
-      return periodItems
+      return items
           .where((item) => item.isCredit)
           .toList();
 
     case _TransactionFilter.moneyOut:
-      return periodItems
+      return items
           .where((item) => item.isDebit)
           .toList();
   }
@@ -453,11 +430,15 @@ class _BalanceSection extends StatelessWidget {
     required this.summary,
     required this.showAddMoney,
     required this.onAddMoney,
+    required this.showWithdraw,
+    required this.onWithdraw,
   });
 
   final WalletSummaryModel summary;
   final bool showAddMoney;
   final VoidCallback onAddMoney;
+  final bool showWithdraw;
+  final VoidCallback onWithdraw;
 
   @override
   Widget build(BuildContext context) {
@@ -606,6 +587,25 @@ class _BalanceSection extends StatelessWidget {
               ),
             ],
 
+            if (showWithdraw) ...[
+              const SizedBox(height: 18),
+              SizedBox(
+                height: 38,
+                child: FilledButton.icon(
+                  onPressed: onWithdraw,
+                  style: FilledButton.styleFrom(
+                    elevation: 0,
+                    backgroundColor: AppColors.brand,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  icon: const Icon(Icons.account_balance_outlined, size: 16),
+                  label: Text('Withdraw funds', style: GoogleFonts.outfit(fontSize: 12.5, fontWeight: FontWeight.w500)),
+                ),
+              ),
+            ],
+
             // Doctor side (no Add money): keep the reserved box in its old spot.
             if (!showAddMoney && summary.reservedBalance > 0) ...[
               const SizedBox(height: 17),
@@ -629,7 +629,7 @@ class _BalanceSection extends StatelessWidget {
                     const SizedBox(width: 7),
                     Expanded(
                       child: Text(
-                        'Reserved for consultations',
+                        'Reserved balance',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.outfit(
@@ -1473,6 +1473,9 @@ class _TransactionRow extends StatelessWidget {
       WalletTransactionType.doctorRefundDebit =>
         'Consultation earning refunded',
 
+      WalletTransactionType.doctorWithdrawal =>
+        'Funds withdrawn to your account',
+
       WalletTransactionType.platformCommissionRefund =>
         'Service fee reversed',
 
@@ -1558,6 +1561,7 @@ class _TransactionRow extends StatelessWidget {
       case WalletTransactionType.consultationRefund:
       case WalletTransactionType.doctorRefundDebit:
       case WalletTransactionType.platformCommissionRefund:
+      case WalletTransactionType.doctorWithdrawal:
         return Icons.undo_rounded;
 
       case WalletTransactionType.unknown:
@@ -1614,6 +1618,9 @@ class _TransactionRow extends StatelessWidget {
 
       WalletTransactionType.doctorRefundDebit =>
         'Refund deduction',
+
+      WalletTransactionType.doctorWithdrawal =>
+        'Funds withdrawn',
 
       WalletTransactionType.platformCommissionRefund =>
         'Commission refund',
@@ -2086,6 +2093,9 @@ String _transactionTitle(
 
     WalletTransactionType.doctorRefundDebit =>
       'Refund deduction',
+
+    WalletTransactionType.doctorWithdrawal =>
+      'Funds withdrawn',
 
     WalletTransactionType.platformCommissionRefund =>
       'Commission refund',

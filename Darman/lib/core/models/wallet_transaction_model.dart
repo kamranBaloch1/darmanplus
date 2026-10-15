@@ -7,6 +7,7 @@ enum WalletTransactionType {
   platformCommission,
   consultationRefund,
   doctorRefundDebit,
+  doctorWithdrawal,
   platformCommissionRefund,
   unknown;
 
@@ -20,6 +21,7 @@ enum WalletTransactionType {
       'platform_commission' => WalletTransactionType.platformCommission,
       'consultation_refund' => WalletTransactionType.consultationRefund,
       'doctor_refund_debit' => WalletTransactionType.doctorRefundDebit,
+      'doctor_withdrawal' => WalletTransactionType.doctorWithdrawal,
       'platform_commission_refund' => WalletTransactionType.platformCommissionRefund,
       _ => WalletTransactionType.unknown,
     };
@@ -34,6 +36,7 @@ enum WalletTransactionType {
     WalletTransactionType.platformCommission => 'platform_commission',
     WalletTransactionType.consultationRefund => 'consultation_refund',
     WalletTransactionType.doctorRefundDebit => 'doctor_refund_debit',
+    WalletTransactionType.doctorWithdrawal => 'doctor_withdrawal',
     WalletTransactionType.platformCommissionRefund => 'platform_commission_refund',
     WalletTransactionType.unknown => 'unknown',
   };
@@ -80,6 +83,7 @@ class WalletTransactionModel {
     final displayType = switch (metadata['ledger_kind']?.toString()) {
       'consultation_refund' => WalletTransactionType.consultationRefund,
       'doctor_refund_debit' => WalletTransactionType.doctorRefundDebit,
+      'doctor_withdrawal' => WalletTransactionType.doctorWithdrawal,
       _ => WalletTransactionType.fromDatabase(storedType),
     };
     return WalletTransactionModel(

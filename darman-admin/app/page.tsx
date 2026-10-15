@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Activity,
   AlertTriangle,
+  BellRing,
   ArrowRight,
   BadgeCheck,
   BarChart3,
@@ -28,6 +29,8 @@ import {
 import { createClient, Session } from "@supabase/supabase-js";
 import DoctorDetailsDialog from "./components/doctor-details-dialog";
 import StorageImage from "./components/storage-image";
+import DoctorWithdrawals from "./components/doctor-withdrawals";
+import Announcements from "./components/announcements";
 
 type U = {
   uid: string;
@@ -126,6 +129,8 @@ type T =
   | "patients"
   | "verification"
   | "manual-topups"
+  | "doctor-withdrawals"
+  | "announcements"
   | "wallets"
   | "followups"
   | "reviews"
@@ -146,6 +151,8 @@ const tabs: [T, string, React.ReactNode][] = [
   ["patients", "Patients", <Users />],
   ["verification", "Verification", <BadgeCheck />],
   ["manual-topups", "Manual top-ups", <ReceiptText />],
+  ["doctor-withdrawals", "Doctor withdrawals", <Banknote />],
+  ["announcements", "Announcements", <BellRing />],
   ["wallets", "Wallets & settlements", <WalletCards />],
   ["followups", "Follow-ups", <CalendarClock />],
   ["reviews", "Ratings & reviews", <Star />],
@@ -304,6 +311,10 @@ export default function Home() {
           />
         ) : t === "manual-topups" ? (
           <ManualTopUps token={s.access_token} />
+        ) : t === "doctor-withdrawals" ? (
+          <DoctorWithdrawals token={s.access_token} />
+        ) : t === "announcements" ? (
+          <Announcements token={s.access_token} />
         ) : t === "finance" ? (
           <Finance token={s.access_token} />
         ) : (

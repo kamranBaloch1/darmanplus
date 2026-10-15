@@ -143,6 +143,27 @@ class WalletRepository {
     }
   }
 
+  Future<void> createDoctorWithdrawalRequest({
+    required double amount,
+    required String bankName,
+    required String accountNumber,
+    required String accountName,
+  }) async {
+    try {
+      await _client.rpc(
+        'create_doctor_withdrawal_request',
+        params: {
+          'p_amount': amount,
+          'p_bank_name': bankName,
+          'p_account_number': accountNumber,
+          'p_account_name': accountName,
+        },
+      );
+    } on PostgrestException catch (error) {
+      throw WalletException(error.message);
+    }
+  }
+
   Future<List<WalletTransactionModel>> _getTransactionsLegacy({
     required int limit,
     DateTime? before,
