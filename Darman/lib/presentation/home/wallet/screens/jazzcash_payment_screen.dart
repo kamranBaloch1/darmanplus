@@ -4,7 +4,6 @@ import 'package:darmaan/core/theme/app_colors.dart';
 import 'package:darmaan/core/utils/app_error_message.dart';
 import 'package:darmaan/presentation/home/wallet/repository/manual_top_up_repository.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:gal/gal.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -24,11 +23,6 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
   final ImagePicker _picker = ImagePicker();
 
   static const String businessName = 'FindUs';
-  static const String accountNumber = '984336164';
-
-  static const String qrAsset =
-      'assets/images/branding/jazzcash_business_qr.jpeg';
-
   static const String jazzCashLogoAsset =
       'assets/images/branding/jazzcash_icon.png';
 
@@ -36,18 +30,28 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
   static const Color jazzCashRed = Color(0xFFE31E24);
   static const Color success = Color(0xFF22A06B);
 
-  bool _copied = false;
   bool _submitting = false;
   bool _savingQr = false;
+  bool _qrLoading = true;
+  String? _qrUrl;
+  String? _qrError;
   File? _receiptFile;
 
-  Future<void> _copyAccountNumber() async {
-    await Clipboard.setData(const ClipboardData(text: accountNumber));
-    if (!mounted) return;
-    setState(() => _copied = true);
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _copied = false);
-    });
+  @override
+  void initState() {
+    super.initState();
+    _loadQrCode();
+  }
+
+  Future<void> _loadQrCode() async {
+    try {
+      final url = await _manualRepository.getPaymentQrUrl();
+      if (mounted) setState(() => _qrUrl = url);
+    } catch (error) {
+      if (mounted) setState(() => _qrError = AppErrorMessage.from(error));
+    } finally {
+      if (mounted) setState(() => _qrLoading = false);
+    }
   }
 
   Future<void> _saveQrCode() async {
@@ -58,10 +62,17 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
       if (!allowed) allowed = await Gal.requestAccess();
       if (!allowed) throw Exception('Gallery permission was not allowed.');
 
-      final data = await rootBundle.load(qrAsset);
+      final qrUrl = _qrUrl;
+      if (qrUrl == null) throw Exception('Payment QR is not available.');
+      final request = await HttpClient().getUrl(Uri.parse(qrUrl));
+      final response = await request.close();
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('Payment QR could not be downloaded.');
+      }
+      final bytes = await response.fold<List<int>>(<int>[], (all, chunk) => all..addAll(chunk));
       final directory = await getTemporaryDirectory();
-      final file = File('${directory.path}/darman-jazzcash-till-qr.jpeg');
-      await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
+      final file = File('${directory.path}/darman-jazzcash-qr.jpg');
+      await file.writeAsBytes(bytes, flush: true);
       await Gal.putImage(file.path);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -332,7 +343,7 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Scan the QR or pay using the account below.',
+                      'Scan the QR code to make your payment.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
@@ -369,27 +380,39 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                             children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(14),
-                                child: Image.asset(
-                                  qrAsset,
-                                  width: 200,
-                                  height: 200,
-                                  fit: BoxFit.contain,
-                                  filterQuality: FilterQuality.high,
-                                  isAntiAlias: true,
-                                  errorBuilder: (_, __, ___) {
-                                    return const SizedBox(
-                                      width: 200,
-                                      height: 200,
-                                      child: Center(
-                                        child: Icon(
-                                          Icons.qr_code_2_rounded,
-                                          size: 100,
-                                          color: Color(0xFFC7C8CC),
+                                child: _qrUrl == null
+                                    ? SizedBox(
+                                        width: 200,
+                                        height: 200,
+                                        child: Center(
+                                          child: _qrLoading
+                                              ? const CircularProgressIndicator()
+                                              : Text(
+                                                  _qrError ?? 'QR unavailable',
+                                                  textAlign: TextAlign.center,
+                                                ),
                                         ),
+                                      )
+                                    : Image.network(
+                                        _qrUrl!,
+                                        width: 200,
+                                        height: 200,
+                                        fit: BoxFit.contain,
+                                        filterQuality: FilterQuality.high,
+                                        errorBuilder: (_, __, ___) {
+                                          return const SizedBox(
+                                            width: 200,
+                                            height: 200,
+                                            child: Center(
+                                              child: Icon(
+                                                Icons.qr_code_2_rounded,
+                                                size: 100,
+                                                color: Color(0xFFC7C8CC),
+                                              ),
+                                            ),
+                                          );
+                                        },
                                       ),
-                                    );
-                                  },
-                                ),
                               ),
                               const SizedBox(height: 10),
                               Text(
@@ -402,7 +425,7 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                               ),
                               const SizedBox(height: 6),
                               TextButton.icon(
-                                onPressed: _savingQr ? null : _saveQrCode,
+                                onPressed: _savingQr || _qrUrl == null ? null : _saveQrCode,
                                 icon: _savingQr
                                     ? const SizedBox.square(
                                         dimension: 14,
@@ -468,89 +491,6 @@ class _JazzCashPaymentScreenState extends State<JazzCashPaymentScreen> {
                           ),
                         ),
                       ],
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Expanded(child: Divider(color: Colors.grey.shade200)),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text(
-                            'or pay with jazzcash till ID',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                        ),
-                        Expanded(child: Divider(color: Colors.grey.shade200)),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    GestureDetector(
-                      onTap: _copyAccountNumber,
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        child: _copied
-                            ? Row(
-                                key: const ValueKey('copied'),
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.check_circle_rounded,
-                                    size: 16,
-                                    color: Colors.green.shade600,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Copied to clipboard',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.green.shade700,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Row(
-                                key: const ValueKey('number'),
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  _jazzCashMark(size: 22),
-                                  const SizedBox(width: 10),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      
-                                      const Text(
-                                        accountNumber,
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                          letterSpacing: 0.4,
-                                          fontFeatures: [
-                                            FontFeature.tabularFigures(),
-                                          ],
-                                          color: accent,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Icon(
-                                    Icons.copy_rounded,
-                                    size: 16,
-                                    color: Colors.grey.shade500,
-                                  ),
-                                ],
-                              ),
-                      ),
                     ),
 
                     const SizedBox(height: 16),

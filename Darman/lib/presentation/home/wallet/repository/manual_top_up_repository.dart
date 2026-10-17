@@ -38,6 +38,18 @@ class ManualTopUpRepository {
   ManualTopUpRepository({SupabaseClient? client})
       : _supabase = client ?? Supabase.instance.client;
 
+  Future<String> getPaymentQrUrl() async {
+    final response = await _supabase.functions.invoke('get-manual-payment-qr');
+    final data = response.data;
+    if (response.status < 200 || response.status >= 300 || data is! Map) {
+      final message = data is Map ? data['error']?.toString() : null;
+      throw Exception(message ?? 'Payment QR is temporarily unavailable.');
+    }
+    final qrUrl = data['qr_url']?.toString().trim() ?? '';
+    if (qrUrl.isEmpty) throw Exception('Payment QR has not been configured yet.');
+    return qrUrl;
+  }
+
   /// Upload receipt to a PRIVATE Supabase Storage bucket.
   /// Create a bucket called `wallet-receipts` and keep it private.
   Future<String> uploadReceipt(File file) async {

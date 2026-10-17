@@ -15,6 +15,7 @@ import {
   ClipboardList,
   Eye,
   EyeOff,
+  ImagePlus,
   LayoutDashboard,
   LogOut,
   ReceiptText,
@@ -31,6 +32,7 @@ import DoctorDetailsDialog from "./components/doctor-details-dialog";
 import StorageImage from "./components/storage-image";
 import DoctorWithdrawals from "./components/doctor-withdrawals";
 import Announcements from "./components/announcements";
+import PaymentQrSettings from "./components/payment-qr-settings";
 
 type U = {
   uid: string;
@@ -131,6 +133,7 @@ type T =
   | "manual-topups"
   | "doctor-withdrawals"
   | "announcements"
+  | "payment-qr"
   | "wallets"
   | "followups"
   | "reviews"
@@ -153,6 +156,7 @@ const tabs: [T, string, React.ReactNode][] = [
   ["manual-topups", "Manual top-ups", <ReceiptText />],
   ["doctor-withdrawals", "Doctor withdrawals", <Banknote />],
   ["announcements", "Announcements", <BellRing />],
+  ["payment-qr", "Payment QR", <ImagePlus />],
   ["wallets", "Wallets & settlements", <WalletCards />],
   ["followups", "Follow-ups", <CalendarClock />],
   ["reviews", "Ratings & reviews", <Star />],
@@ -315,6 +319,8 @@ export default function Home() {
           <DoctorWithdrawals token={s.access_token} />
         ) : t === "announcements" ? (
           <Announcements token={s.access_token} />
+        ) : t === "payment-qr" ? (
+          <PaymentQrSettings token={s.access_token} />
         ) : t === "finance" ? (
           <Finance token={s.access_token} />
         ) : (

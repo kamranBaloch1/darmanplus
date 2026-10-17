@@ -92,18 +92,18 @@ function Info({ label, value }: { label: string; value: any }) { return <div cla
 function AdminMessage({ message: m, sender }: { message: any; sender: string }) {
   const media = m.media_signed_url as string | undefined;
   const mime = String(m.mime_type ?? "").toLowerCase();
-  const isImage = m.type === "image" || mime.startsWith("image/");
-  const isVoice = m.type === "voice" || mime.startsWith("audio/");
+  const isImage = m.attachment_kind === "image" || m.type === "image" || mime.startsWith("image/");
+  const isVoice = m.attachment_kind === "voice" || m.type === "voice" || mime.startsWith("audio/");
   const isVideo = mime.startsWith("video/");
   return <article className="admin-message">
     <header><strong>{sender}</strong><time>{date(m.created_at)}</time></header>
     {m.is_deleted ? <p className="deleted-message">This message was deleted</p> : <>
       {m.text && <p>{m.text}</p>}
-      {media && isImage && <a className="chat-image" href={media} target="_blank" rel="noreferrer"><img src={media} alt={m.file_name || "Chat attachment"} loading="lazy" /></a>}
-      {media && isVoice && <div className="chat-audio"><span>Voice message{m.voice_duration_seconds ? ` · ${m.voice_duration_seconds}s` : ""}</span><audio controls preload="metadata" src={media} /></div>}
+      {isImage && <p className="chat-attachment-label">Image message</p>}
+      {isVoice && <p className="chat-attachment-label">Voice message{m.voice_duration_seconds ? ` · ${m.voice_duration_seconds}s` : ""}</p>}
       {media && isVideo && <video className="chat-video" controls preload="metadata" src={media} />}
       {media && !isImage && !isVoice && !isVideo && <a className="chat-file" href={media} target="_blank" rel="noreferrer" download={m.file_name || undefined}><FileText /><span><b>{m.file_name || "Open attachment"}</b><small>{mime || "File attachment"}</small></span><Download /></a>}
-      {!m.text && !media && <p>{m.file_name || label(m.type)}</p>}
+      {!m.text && !media && !isImage && !isVoice && <p>{m.file_name || label(m.type)}</p>}
     </>}
   </article>;
 }

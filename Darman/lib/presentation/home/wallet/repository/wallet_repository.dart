@@ -150,14 +150,31 @@ class WalletRepository {
     required String accountName,
   }) async {
     try {
-      await _client.rpc(
-        'create_doctor_withdrawal_request',
-        params: {
-          'p_amount': amount,
-          'p_bank_name': bankName,
-          'p_account_number': accountNumber,
-          'p_account_name': accountName,
+      final response = await _client.functions.invoke(
+        'create-doctor-withdrawal-request',
+        body: {
+          'amount': amount,
+          'bank_name': bankName,
+          'account_number': accountNumber,
+          'account_name': accountName,
         },
+      );
+      final data = response.data;
+      if (response.status < 200 || response.status >= 300) {
+        final error = data is Map ? data['error']?.toString() : null;
+        throw WalletException(error?.isNotEmpty == true
+            ? error!
+            : 'Could not create withdrawal request.');
+      }
+    } on WalletException {
+      rethrow;
+    } on FunctionException catch (error) {
+      final details = error.details;
+      if (details is Map && details['error'] != null) {
+        throw WalletException(details['error'].toString());
+      }
+      throw WalletException(
+        error.reasonPhrase ?? 'Could not create withdrawal request.',
       );
     } on PostgrestException catch (error) {
       throw WalletException(error.message);
