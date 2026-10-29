@@ -27,7 +27,7 @@ class ConsultationCompletionModel {
     return ConsultationCompletionModel(
       bookingId: map['booking_id']?.toString() ?? '',
       grossFee: (map['gross_fee'] as num?)?.toDouble() ?? 0,
-      commissionRate: (map['commission_rate'] as num?)?.toDouble() ?? 0.12,
+      commissionRate: (map['commission_rate'] as num?)?.toDouble() ?? 0.25,
       commissionAmount: (map['commission_amount'] as num?)?.toDouble() ?? 0,
       doctorEarning: (map['doctor_earning'] as num?)?.toDouble() ?? 0,
       isDoctor: map['is_doctor'] == true,

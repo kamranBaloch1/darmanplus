@@ -1505,7 +1505,7 @@ class _TransactionRow extends StatelessWidget {
                   gross > 0 &&
                   commission != null
               ? commission / gross
-              : 0.12);
+              : 0.25);
 
       if (commission != null) {
         return '${(rate * 100).toStringAsFixed(0)}% commission: '
@@ -1692,7 +1692,7 @@ class _TransactionDetailsSheet
                 grossFee > 0 &&
                 commission != null
             ? commission / grossFee
-            : 0.12);
+            : 0.25);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(

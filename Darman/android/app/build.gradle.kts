@@ -20,7 +20,7 @@ FileInputStream(keystorePropertiesFile).use(keystoreProperties::load)
 android {
     namespace = "com.user.darman"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         // Required by flutter_local_notifications.
